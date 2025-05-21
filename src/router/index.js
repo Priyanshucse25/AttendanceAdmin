@@ -3,6 +3,7 @@ import DashboardLayout from "@/layouts/DashboardLayout.vue";
 
 import HomeView from "../views/HomeView.vue";
 import EmployeeView from "@/views/EmployeeView.vue";
+import SalaryView from "@/views/SalaryView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,6 +22,11 @@ const router = createRouter({
           path: "/employee",
           name: "employee",
           component: EmployeeView,
+        },
+        {
+          path: "/salary",
+          name: "salary",
+          component: SalaryView,
         },
       ],
     },
