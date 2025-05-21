@@ -17,6 +17,9 @@ export default {
         xs: "340px", // Extra small devices (phones, 480px and up)
         "3xl": "1700px",
       },
+      colors: {
+        "custom-gray": "#F1F3F8"
+      }
     },
   },
   plugins: [],
