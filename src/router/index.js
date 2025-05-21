@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import DashboardLayout from "@/layouts/DashboardLayout.vue";
 
 import HomeView from "../views/HomeView.vue";
+import EmployeeView from "@/views/EmployeeView.vue";
 import SalaryView from "@/views/SalaryView.vue";
 
 const router = createRouter({
@@ -16,6 +17,11 @@ const router = createRouter({
           path: "/",
           name: "home",
           component: HomeView,
+        },
+        {
+          path: "/employee",
+          name: "employee",
+          component: EmployeeView,
         },
         {
           path: "/salary",
