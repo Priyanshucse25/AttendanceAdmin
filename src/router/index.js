@@ -1,9 +1,12 @@
 import { createRouter, createWebHistory } from "vue-router";
 import DashboardLayout from "@/layouts/DashboardLayout.vue";
+import AuthLayout from "@/layouts/AuthLayout.vue"
 
 import HomeView from "../views/HomeView.vue";
 import EmployeeView from "@/views/EmployeeView.vue";
 import SalaryView from "@/views/SalaryView.vue";
+import LeaveView from "@/views/LeaveView.vue";
+import LoginView from "@/views/LoginView.vue"
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,7 +31,24 @@ const router = createRouter({
           name: "salary",
           component: SalaryView,
         },
+        {
+          path: "/leave",
+          name: "leave",
+          component: LeaveView,
+        },
       ],
+    },
+    {
+      path: "/",
+      name: "",
+      component: AuthLayout,
+      children: [
+        {
+          path: "/login",
+          name: "login",
+          component: LoginView,
+        },
+      ]
     },
   ],
 });

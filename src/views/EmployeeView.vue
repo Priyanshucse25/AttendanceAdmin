@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6 bg-[#F1F3F8] min-h-screen">
+  <div class="p-6 bg-white w-full rounded-md">
     <!-- Header -->
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-xl font-bold">Employee list</h1>
@@ -29,7 +29,6 @@
       <table class="w-full text-sm">
         <thead class="bg-gray-100 text-left">
           <tr>
-            <th class="p-3"><input type="checkbox" /></th>
             <th class="p-3">Employee Name & ID</th>
             <th class="p-3">Email</th>
             <th class="p-3">Phone Number</th>
@@ -43,7 +42,6 @@
         </thead>
         <tbody>
           <tr v-for="(employee, index) in paginatedEmployees" :key="index" class="border-t">
-            <td class="p-3"><input type="checkbox" /></td>
             <td class="p-3 flex items-center gap-2">
               <img :src="employee.image" alt="" class="w-8 h-8 rounded-full" />
               <div>
