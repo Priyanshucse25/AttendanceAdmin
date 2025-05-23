@@ -1,50 +1,27 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import { useHomeStore } from "@/stores/homeStore";
+import { storeToRefs } from "pinia";
 
-const employees = ref([
-  {
-    name: "Roshni Chandra",
-    id: "FGUSHD8SYD8U9J",
-    department: "Sales",
-    location: "Telibandha",
-    photo: "View",
-    time: "09:42 AM - 06:30 PM",
-    status: "Present",
-  },
-  {
-    name: "Ankit Sharma",
-    id: "HJG8723YGS98",
-    department: "Marketing",
-    location: "Pandri",
-    photo: "View",
-    time: "10:00 AM - 06:45 PM",
-    status: "Absent",
-  },
-  {
-    name: "Meera Patel",
-    id: "UYGH23SD87DH",
-    department: "HR",
-    location: "Raipur HQ",
-    photo: "View",
-    time: "09:00 AM - 05:30 PM",
-    status: "Half Day",
-  },
-  {
-    name: "Rahul Verma",
-    id: "JKL8723YUI23",
-    department: "IT",
-    location: "Bhilai",
-    photo: "View",
-    time: "08:30 AM - 04:30 PM",
-    status: "Present",
-  },
-]);
+// store setup
+const homeStore = useHomeStore();
+const { HomeData } = storeToRefs(homeStore);
+
+// fetch data on mount
+onMounted(() => {
+  homeStore.getUserHome();
+});
+
+// update status locally
+function updateStatus(employee, newStatus) {
+  employee.status = newStatus;
+}
 </script>
 
 <template>
   <main class="bg-white w-full rounded-md p-4">
     <div class="flex items-center justify-between">
-      <h2>This Month’s Attendance</h2>
+      <h2>This Month’s Attendance</h2>
       <button>Download</button>
     </div>
 
@@ -57,23 +34,17 @@ const employees = ref([
         class="bg-black bg-opacity-10 px-4 py-1 rounded outline-none"
       />
 
-      <div
-        class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4"
-      >
+      <div class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4">
         <p>Employee Id</p>
         <i class="pi pi-angle-down"></i>
       </div>
 
-      <div
-        class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4"
-      >
+      <div class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4">
         <p>Department</p>
         <i class="pi pi-angle-down"></i>
       </div>
 
-      <div
-        class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4"
-      >
+      <div class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4">
         <p>Status</p>
         <i class="pi pi-angle-down"></i>
       </div>
@@ -93,20 +64,18 @@ const employees = ref([
         </thead>
         <tbody class="text-black">
           <tr
-            v-for="employee in employees"
+            v-for="employee in HomeData"
             :key="employee.id"
             class="border-b border-gray-200"
           >
             <td class="py-3 px-4">
-              <p class="font-semibold">{{ employee.name }}</p>
-              <p class="text-sm text-gray-400">{{ employee.id }}</p>
+              <p class="font-semibold">{{ employee.userName }}</p>
+              <p class="text-sm text-gray-400">{{ employee.userID }}</p>
             </td>
             <td class="py-3 px-4">{{ employee.department }}</td>
-            <td class="py-3 px-4">{{ employee.location }}</td>
-            <td class="py-3 px-4 text-blue-400 underline cursor-pointer">
-              View
-            </td>
-            <td class="py-3 px-4">{{ employee.time }}</td>
+            <td class="py-3 px-4">{{ employee.locationName }} </td>
+            <td class="py-3 px-4 text-blue-400 underline cursor-pointer">View</td>
+            <td class="py-3 px-4">{{ employee.timeStamp }}</td>
             <td class="py-3 px-4 space-x-2">
               <button
                 :class="[
@@ -130,7 +99,7 @@ const employees = ref([
               >
                 Absent
               </button>
-              <button
+              <button  
                 :class="[
                   'px-3 py-1 rounded font-semibold text-sm',
                   employee.status === 'Half Day'
