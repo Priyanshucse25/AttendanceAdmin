@@ -2,26 +2,56 @@ import { makeRequest } from "@/request/request";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
+export const useEmployeeStore = defineStore("employee", () => {
+  const endpoint = "admin";
+  const allEmployeeData = ref([]);
 
-export const useLeaveStore = defineStore("employee", () => {
-    const endpoint = "userleave"
-    const EmployeeData = ref([])
+  const employeeData = ref([]);
 
-    const getEmployees = async() => {
-        try {
-            const response = await makeRequest(endpoint, "GET", {}, {}, {}, 0, null, "/admin")
-            leaveData.value = response?.allLeaveData
-            console.log(leaveData.value)
-        } catch (error) {
-            console.error("Error in employee" ,error)
-        }
+  const getallEmployees = async () => {
+    try {
+      const response = await makeRequest("/user", "GET", {}, {}, {}, 0, null, "/admin/allusers/all");
+      allEmployeeData.value = response?.allUsers;
+    } catch (error) {
+      console.error("Error in fetching all employes data", error);
     }
+  };
 
-
-    getEmployees()
-
-    return{
-        EmployeeData,
-        getEmployees
+  const createNewEmployee = async (data) => {
+    try {
+      await makeRequest("/user", "POST", data, {}, {}, 0, null, "/admin/signup");
+      return response; 
+    } catch (error) {
+      console.error("Error in creating new employee", error);
     }
-})
+  };
+
+  const updateEmployee = async (id, data) => {
+    try {
+      console.log("From store" ,data)
+      await makeRequest("/user", "PUT", data, {}, {}, 0, id);
+      return response; 
+    } catch (error) {
+      console.error("Error in updating employee", error);
+    }
+  }
+
+  const deleteEmployee = async (id) => {
+    try {
+      await makeRequest("/user", "DELETE", {}, {}, {}, 0, id)
+    } catch (error) {
+      console.error("Error in deleting employee", error);
+    }
+  }
+
+  getallEmployees();
+
+  return {
+    allEmployeeData,
+    getallEmployees,
+    createNewEmployee,
+    updateEmployee,
+    deleteEmployee
+  };
+});
+

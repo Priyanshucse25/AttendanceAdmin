@@ -1,11 +1,13 @@
 import { createRouter, createWebHistory } from "vue-router";
 import DashboardLayout from "@/layouts/DashboardLayout.vue";
 import AuthLayout from "@/layouts/AuthLayout.vue"
+import NoSidebarLayout from "@/layouts/NoSidebarLayout.vue"
 
 import HomeView from "../views/HomeView.vue";
-import EmployeeView from "@/views/EmployeeView.vue";
+import EmployeeView from "@/views/Employee/EmployeeView.vue";
 import SalaryView from "@/views/SalaryView.vue";
 import LeaveView from "@/views/LeaveView.vue";
+import ProfileView from "@/views/Profile/ProfileView.vue"
 import LoginView from "@/views/LoginView.vue"
 
 const router = createRouter({
@@ -37,6 +39,18 @@ const router = createRouter({
           component: LeaveView,
         },
       ],
+    },
+    {
+      path: "/",
+      name: "",
+      component: NoSidebarLayout,
+      children: [
+        {
+          path: "/profile",
+          name: "profile",
+          component: ProfileView,
+        },
+      ]
     },
     {
       path: "/",

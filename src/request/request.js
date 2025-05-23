@@ -54,7 +54,7 @@ export async function makeRequest(
   params = {},
   wait = 0,
   id = null,
-  subEndpoint = ''
+  subPath = ''
 ) {
   try {
     if (!endpoint) throw new Error('Endpoint is required')
@@ -63,23 +63,26 @@ export async function makeRequest(
       await new Promise(resolve => setTimeout(resolve, wait))
     }
 
-    const fullUrl = `${endpoint}${subEndpoint}`
+    // Build final endpoint path (subPath before id)
+    let fullEndpoint = endpoint
+    if (subPath) fullEndpoint += `${subPath}`
+    if (id) fullEndpoint += `/${id}`
 
     const response = await axios({
-      url: fullUrl,
+      url: fullEndpoint,
       method: method.toUpperCase(),
       data,
       params,
       ...config,
     })
 
-    console.log(`[Request${id ? ` - ${id}` : ''}]`, {
-      url: fullUrl,
-      method,
-      params,
-      data,
-      status: response.status,
-    })
+    // console.log(`[Request${id ? ` - ${id}` : ''}]`, {
+    //   url: fullEndpoint,
+    //   method,
+    //   params,
+    //   data,
+    //   status: response.status,
+    // })
 
     return response.data
   } catch (error) {
@@ -87,3 +90,4 @@ export async function makeRequest(
     throw error
   }
 }
+
