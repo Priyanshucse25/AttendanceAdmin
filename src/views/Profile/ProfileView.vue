@@ -1,10 +1,15 @@
 <script setup>
 import { ref } from "vue";
+import { useProfileStore } from "@/stores/profileStore";
 import DetailSection from "./DetailSection.vue";
 import PunchSection from "./PunchSection.vue";
 import LeaveSection from "./LeaveSection.vue";
 import DocumentSection from "./DocumentSection.vue";
 import WeekendSection from "./WeekendSection.vue";
+import { storeToRefs } from "pinia";
+
+const profileStore = useProfileStore()
+const {companyDetails} = storeToRefs(profileStore)
 
 const activeTab = ref("about");
 
@@ -26,7 +31,7 @@ const tabs = [
       <div class="flex items-center gap-4">
         <div class="w-[100px] h-[100px] bg-slate-400 rounded-full"></div>
         <div class="space-y-1">
-          <h2 class="font-semibold text-[20px]">X-tention crew technology</h2>
+          <h2 class="font-semibold capitalize text-[20px]">{{ companyDetails.name }}</h2>
           <div class="flex gap-4 text-[14px]">
             <p>Software company</p>
             <p>IT specialist</p>

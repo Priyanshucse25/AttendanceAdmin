@@ -33,10 +33,10 @@ function getLeaveDuration(from, to) {
 
 <template>
   <section class="font-inter min-w-[350px] space-y-2">
-    <div class="bg-white rounded-md p-4 h-[300px]">
+    <div class="bg-white rounded-md p-4 h-[320px]">
       <div class="flex items-center justify-between">
         <h2 class="font-bold">Employee on leaves</h2>
-        <button>See all</button>
+        <router-link to="/leave">See all</router-link>
       </div>
 
       <hr class="my-3" />
@@ -64,9 +64,9 @@ function getLeaveDuration(from, to) {
       </div>
     </div>
 
-    <div class="bg-white rounded-md p-4 h-[300px]">
+    <div class="bg-white rounded-md p-4 h-[330px]">
       <div class="flex items-center justify-between">
-        <h2>Celebration</h2>
+        <h2 class="font-bold">Celebration</h2>
       </div>
     </div>
   </section>
