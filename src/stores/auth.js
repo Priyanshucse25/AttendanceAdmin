@@ -21,6 +21,7 @@ export const useAuthStore = defineStore('auth', {
     logout() {
       localStorage.removeItem('token')
       this.token = ''
+      window.location.reload();
     },
     isAuthenticated() {
       return !!this.token
