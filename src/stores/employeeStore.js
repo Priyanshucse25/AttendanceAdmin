@@ -54,3 +54,4 @@ export const useEmployeeStore = defineStore("employee", () => {
     deleteEmployee
   };
 });
+
