@@ -4,13 +4,17 @@ import { ref } from "vue";
 
 
 export const useProfileStore = defineStore("profile", () => {
-    const endpoint = "companydetails"
+    const endpoint = "admin"
     const companyData = ref([])
     const companyDetails = ref([])
+    const punchInDetails = ref([])
+    const holidayDetails = ref([])
+    const weekendDetails = ref([])
+    const companyDocuments = ref([])
 
     const getCompanyDetails = async() => {
         try {
-           const response = await makeRequest(endpoint, "GET")
+           const response = await makeRequest(endpoint, "GET", {}, {}, {}, 0, null, "/companyDetails")
             companyDetails.value = response.data
             companyData.value = response.data?.cmpDetail
         } catch (error) {
@@ -31,20 +35,97 @@ export const useProfileStore = defineStore("profile", () => {
 
     const editCompanyDetails = async(form) => {
         try {
-          const response = await makeRequest(endpoint, "PUT", form, {}, {}, 0)
+          const response = await makeRequest(endpoint, "PUT", form, {}, {}, 0, null, "/companyDetails")
         return response
         } catch (error) {
             console.error(error)
         }
     }
 
+    const getPunchInDetails = async() => {
+        try {
+            const response = await makeRequest(endpoint, "GET", {}, {}, {}, 0, null, "/punchdetails")
+            punchInDetails.value = response.data
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const editPunchInDetails = async(form) => {
+        try {
+            const response = await makeRequest(endpoint, "POST", {form}, {}, {}, 0, null, "/punchdetails")
+            return response
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const getHolidayDetails = async() => {
+        try {
+            const response = await makeRequest(endpoint, "GET", {}, {}, {}, 0, null, "/holiday")
+            holidayDetails.value = response
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const getWeekendDetails = async() => {
+        try {
+            const response = await makeRequest(endpoint, "GET", {}, {}, {}, 0, null, "/weekend")
+            weekendDetails.value = response
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+
+    const getCompanyDocument = async() => {
+        try {
+             const response = await makeRequest(endpoint, "GET", {}, {}, {}, 0, null, "/companydocument")
+            companyDocuments.value = response.data
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const postCompanyDocument = async(data) => {
+        try {
+            const response = await makeRequest(endpoint, "POST", data, {}, {}, 0, null, "/companydocument")
+            getCompanyDocument()
+            return response
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const deleteCompanyDocument = async(id) => {
+         try {
+            const response = await makeRequest(endpoint, "DELETE", {}, {}, {}, 0, id, "/companydocument")
+            return response
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+
     getCompanyDetails()
+    getPunchInDetails()
+    getHolidayDetails()
+    getWeekendDetails()
+    getCompanyDocument()
 
     return{
         companyData,
         companyDetails,
         getCompanyDetails,
         addCompanyDetails,
-        editCompanyDetails
+        editCompanyDetails,
+        editPunchInDetails,
+        companyDocuments,
+        postCompanyDocument,
+        deleteCompanyDocument,
+        punchInDetails,
+        holidayDetails,
+        weekendDetails
     }
 })

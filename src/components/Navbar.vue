@@ -61,8 +61,8 @@ const handleLogout = async () => {
       
 
       <div class="flex items-center gap-4">
-        <div @click="toggleMenu" class="cursor-pointer">
-          <img src="/svg/admin.svg" alt="bell" class="h-8 w-8 mr-2"/>
+        <div @click="toggleMenu" class="cursor-pointer w-[40px] h-[40px] rounded-full">
+          <img src="/images/dummy_profile_img.jpg" alt="">
         </div>
 
         <transition name="menu-fade">

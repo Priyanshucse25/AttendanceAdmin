@@ -22,7 +22,7 @@ export const useHomeStore = defineStore("home", () => {
         null,
         "/userdata"
       );
-      HomeData.value = response?.user;
+      HomeData.value = response?.punchDetails;
     } catch (error) {
       console.error("Error in Home", error);
     }finally{
