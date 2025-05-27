@@ -6,7 +6,7 @@ import LottieAnimation from "@/components/LottieAnimation.vue";
 
 // store
 const salaryStore = usesalaryStore();
-const { salaryData, loading, page_id, page_size } = storeToRefs(salaryStore);
+const { salaryData, loading, page, limit } = storeToRefs(salaryStore);
 
 const searchName = ref("");
 const selectedDepartment = ref("");
@@ -51,16 +51,16 @@ const calculatePayable = (emp) => {
   return Math.max(0, Number(emp.actualSalary) - deduction);
 };
 
-watch(page_id, () => {
+watch(page, () => {
   salaryStore.getUserSalary(true);
 });
 
 const nextPage = () => {
-  page_id.value++;
+  page.value++;
 };
 
 const prevPage = () => {
-  if (page_id.value > 0) page_id.value--;
+  if (page.value > 0) page.value--;
 };
 </script>
 
@@ -224,23 +224,23 @@ const prevPage = () => {
       >
         <button
           @click="prevPage"
-          :disabled="page_id === 1"
+          :disabled="page === 1"
           :class="{
             'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-left': true,
-            'cursor-pointer': page_id > 1,
-            'cursor-not-allowed': page_id === 1
+            'cursor-pointer': page > 1,
+            'cursor-not-allowed': page === 1
           }"
         ></button>
 
-        <p>Page {{ page_id }}</p>
+        <p>Page {{ page }}</p>
 
         <button
           @click="nextPage"
-          :disabled="filteredSalaries.length < page_size"
+          :disabled="filteredSalaries.length < limit"
           :class="{
             'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
-            'cursor-pointer': filteredSalaries.length >= page_size,
-            'cursor-not-allowed': filteredSalaries.length < page_size
+            'cursor-pointer': filteredSalaries.length >= limit,
+            'cursor-not-allowed': filteredSalaries.length < limit
           }"
         ></button>
       </div>

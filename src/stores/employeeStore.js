@@ -7,14 +7,14 @@ export const useEmployeeStore = defineStore("employee", () => {
   const allEmployeeData = ref([]);
   const loading = ref(true);
   const employeeData = ref([]);
-  const page_id = ref(1)
-  const page_size = ref(10)
+  const page = ref(1)
+  const limit = ref(10)
 
   const getallEmployees = async () => {
     loading.value = true;
     try {
-      const response = await makeRequest("/user", "GET", {}, {}, {page_id : page_id.value, page_size: page_size.value}, 0, null, "/admin/allusers/all");
-      allEmployeeData.value = response?.allUsers;
+      const response = await makeRequest("/user", "GET", {}, {}, {page : page.value, limit: limit.value}, 0, null, "/admin/allusers/all");
+      allEmployeeData.value = response?.users;
     } catch (error) {
       console.error("Error in fetching all employes data", error);
     } finally{
@@ -24,7 +24,7 @@ export const useEmployeeStore = defineStore("employee", () => {
 
   const createNewEmployee = async (data) => {
     try {
-      await makeRequest("/user", "POST", data, {}, {page_id : page_id.value, page_size: page_size.value}, 0, null, "/admin/signup");
+      await makeRequest("/user", "POST", data, {}, {page : page.value, limit: limit.value}, 0, null, "/admin/signup");
       return response; 
     } catch (error) {
       console.error("Error in creating new employee", error);
@@ -58,8 +58,8 @@ export const useEmployeeStore = defineStore("employee", () => {
     updateEmployee,
     deleteEmployee,
     loading,
-    page_id,
-    page_size
+    page,
+    limit
   };
 });
 
