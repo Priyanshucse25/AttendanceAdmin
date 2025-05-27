@@ -90,7 +90,7 @@ const addSalaryAddOn = async () => {
     
     const updateData = {
       username: selectedEmployee.value.name,
-      userId: selectedEmployee.value.id,
+      userId: selectedEmployee.value.empId,
       department: selectedEmployee.value.department,
       type: selectedEmployee.value.type,
       present: selectedEmployee.value.present,
@@ -98,10 +98,12 @@ const addSalaryAddOn = async () => {
       leaves: selectedEmployee.value.leaves,
       halfDay: selectedEmployee.value.halfDay,
       addOn: addOnTitle.value,
-      addOnType: addOnType.value,
+      
       actualSalary: updatedSalary,
       payable: updatedPayable,
-      status: selectedEmployee.value.status
+      status: selectedEmployee.value.status,
+      AddOnAmount: selectedEmployee.value.addOnAmount ? 
+        Number(selectedEmployee.value.addOnAmount) + amount : amount
     };
 
     // Call the API
@@ -394,6 +396,7 @@ const prevPage = () => {
             <p class="font-medium">{{ selectedEmployee.name }}</p>
             <p class="text-sm text-gray-600">{{ selectedEmployee.empId }}</p>
           </div>
+          
 
           <!-- Total Salary Display -->
           <div class="flex items-center justify-between mb-4">
@@ -428,7 +431,7 @@ const prevPage = () => {
                 :disabled="updateLoading"
               />
             </div>
-            <select
+            <!-- <select
               v-model="addOnType"
               class="w-full px-3 py-2 border border-gray-300 rounded outline-none focus:border-blue-500"
               :disabled="updateLoading"
@@ -439,7 +442,7 @@ const prevPage = () => {
               <option value="Allowance">Allowance</option>
               <option value="Incentive">Incentive</option>
               <option value="Other">Other</option>
-            </select>
+            </select> -->
             <button
               @click="addSalaryAddOn"
               :disabled="updateLoading"

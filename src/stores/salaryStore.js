@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 
 export const usesalaryStore = defineStore("salary", () => {
-  const endpoint = "salarydetails";
+  const endpoint = "admin";
   const salaryData = ref([]);
   const loading = ref(false);
   const page = ref(1);
