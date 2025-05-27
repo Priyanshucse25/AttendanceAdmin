@@ -1,17 +1,16 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useEmployeeStore } from "@/stores/employeeStore";
 import EmployeeModal from "./AddNewEmployeeModal.vue";
 import DeleteEmployeeModal from "./DeleteEmployeeModal.vue";
 import { storeToRefs } from "pinia";
+import LottieAnimation from "@/components/LottieAnimation.vue";
 
 const employeeStore = useEmployeeStore();
-const { allEmployeeData } = storeToRefs(employeeStore);
+const { allEmployeeData, loading, page_id, page_size } = storeToRefs(employeeStore);
 
 const searchQuery = ref("");
-const filterId = ref("");
 const filterDept = ref("");
-const filterDate = ref("");
 const showModal = ref(false);
 const showDeleteModal = ref(false);
 const selectedEmployee = ref(null);
@@ -20,10 +19,12 @@ const itemsPerPage = 7;
 
 const filteredEmployees = computed(() => {
   return allEmployeeData.value.filter((emp) => {
-    return (
-      emp.email.toLowerCase().includes(searchQuery.value.toLowerCase()) &&
-      (!filterId.value || emp.userId === filterId.value)
-    );
+    const matchesEmail = emp.email
+      ?.toLowerCase()
+      .includes(searchQuery.value.toLowerCase());
+    const matchesDept = !filterDept.value || emp.department === filterDept.value.toLowerCase();
+
+    return matchesEmail && matchesDept;
   });
 });
 
@@ -43,17 +44,17 @@ function openDeleteModal(employee) {
   showDeleteModal.value = true;
 }
 
-const totalPages = computed(() =>
-  Math.ceil(filteredEmployees.value.length / itemsPerPage)
-);
-const start = computed(() => (currentPage.value - 1) * itemsPerPage);
-const end = computed(() =>
-  Math.min(start.value + itemsPerPage, filteredEmployees.value.length)
-);
+watch(page_id, () => {
+  employeeStore.getallEmployees(true);
+});
 
-const paginatedEmployees = computed(() =>
-  filteredEmployees.value.slice(start.value, end.value)
-);
+const nextPage = () => {
+  page_id.value++;
+};
+
+const prevPage = () => {
+  if (page_id.value > 0) page_id.value--;
+};
 </script>
 
 <template>
@@ -78,127 +79,126 @@ const paginatedEmployees = computed(() =>
 
     <div class="flex items-center gap-2">
       <input
+        v-model="searchQuery"
         type="text"
         placeholder="Search by employee"
         class="bg-black bg-opacity-10 px-4 py-1 rounded outline-none"
       />
 
-      <div
-        class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4"
+      <select
+        v-model="filterDept"
+        class="bg-black bg-opacity-10 px-2 py-1 rounded outline-none"
       >
-        <p>Employee Id</p>
-        <i class="pi pi-angle-down"></i>
-      </div>
-
-      <div
-        class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4"
-      >
-        <p>Department</p>
-        <i class="pi pi-angle-down"></i>
-      </div>
-
-      <div
-        class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4"
-      >
-        <p>Status</p>
-        <i class="pi pi-angle-down"></i>
-      </div>
+        <option value="">All Departments</option>
+        <option value="HR">HR</option>
+        <option value="Engineering">Engineering</option>
+        <option value="Sales">Sales</option>
+      </select>
     </div>
 
     <!-- Table -->
-    <div class="bg-white shadow rounded overflow-hidden mt-4">
-      <table class="w-full text-sm">
-        <thead class="bg-gray-100 text-left">
-          <tr>
-            <th class="p-3">Employee Name & ID</th>
-            <th class="p-3">Email</th>
-            <th class="p-3">Phone Number</th>
-            <th class="p-3">Type</th>
-            <th class="p-3">Department</th>
-            <th class="p-3">Role</th>
-            <th class="p-3">Joining date</th>
-            <th class="p-3">Salary</th>
-            <th class="p-3">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(employee, index) in paginatedEmployees"
-            :key="index"
-            class="border-t"
-          >
-            <td class="p-3 flex items-center gap-2">
-              <img :src="employee.image" alt="" class="w-8 h-8 rounded-full" />
-              <div>
-                <div class="font-medium">{{ employee.userName }}</div>
-                <div class="text-xs text-gray-500">{{ employee.userId }}</div>
-              </div>
-            </td>
-            <td class="p-3">{{ employee.email }}</td>
-            <td class="p-3">{{ employee.phoneNumber }}</td>
-            <td class="p-3">
-              <span
-                class="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs capitalize"
-                >{{ employee.emptype }}</span
-              >
-            </td>
-            <td class="p-3">{{ employee.department }}</td>
-            <td class="p-3">{{ employee.role }}</td>
-            <td class="p-3">{{ formatDate(employee.joiningDate) }}</td>
-            <td class="p-3">{{ employee.salary }}</td>
-            <td class="p-3 flex gap-3">
-              <button
-                @click="openEditModal(employee)"
-                class="text-blue-500 text-[20px]"
-              >
-                <i class="pi pi-pen-to-square"></i>
-              </button>
-              <button
-                @click="openDeleteModal(employee)"
-                class="text-red-500 text-[20px]"
-              >
-                <i class="pi pi-trash"></i>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <template v-if="filteredEmployees && filteredEmployees.length > 0">
+      <div class="bg-white shadow rounded overflow-hidden mt-4">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-100 text-left">
+            <tr>
+              <th class="p-3">Employee Name & ID</th>
+              <th class="p-3">Email</th>
+              <th class="p-3">Phone Number</th>
+              <th class="p-3">Type</th>
+              <th class="p-3">Department</th>
+              <th class="p-3">Role</th>
+              <th class="p-3">Joining date</th>
+              <th class="p-3">Salary</th>
+              <th class="p-3">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(employee, index) in filteredEmployees"
+              :key="index"
+              class="border-t"
+            >
+              <td class="p-3 flex items-center gap-2">
+                <img
+                  :src="employee.image"
+                  alt=""
+                  class="w-8 h-8 rounded-full"
+                />
+                <div>
+                  <div class="font-medium">{{ employee.userName }}</div>
+                  <div class="text-xs text-gray-500">{{ employee.userId }}</div>
+                </div>
+              </td>
+              <td class="p-3">{{ employee.email }}</td>
+              <td class="p-3">{{ employee.phoneNumber }}</td>
+              <td class="p-3">
+                <span
+                  class="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs capitalize"
+                  >{{ employee.emptype }}</span
+                >
+              </td>
+              <td class="p-3">{{ employee.department }}</td>
+              <td class="p-3">{{ employee.role }}</td>
+              <td class="p-3">{{ formatDate(employee.joiningDate) }}</td>
+              <td class="p-3">{{ employee.salary }}</td>
+              <td class="p-3 flex gap-3">
+                <button
+                  @click="openEditModal(employee)"
+                  class="text-blue-500 text-[20px]"
+                >
+                  <i class="pi pi-pen-to-square"></i>
+                </button>
+                <button
+                  @click="openDeleteModal(employee)"
+                  class="text-red-500 text-[20px]"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div
+        class="flex justify-center items-center my-4 gap-4 text-text sm-text"
+      >
+        <button
+          @click="prevPage"
+          :disabled="page_id === 1"
+          :class="{
+            'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-left': true,
+            'cursor-pointer': page_id > 1,
+            'cursor-not-allowed': page_id === 1
+          }"
+        ></button>
+
+        <p>Page {{ page_id }}</p>
+
+        <button
+          @click="nextPage"
+          :disabled="filteredEmployees.length < page_size"
+          :class="{
+            'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
+            'cursor-pointer': filteredEmployees.length >= page_size,
+            'cursor-not-allowed': filteredEmployees.length < page_size
+          }"
+        ></button>
+      </div>
+    </template>
+
+    <div v-if="loading" class="w-[350px] mx-auto mt-[200px]">
+      <LottieAnimation animationPath="/animation/loading.json" />
     </div>
 
-    <!-- Pagination -->
-    <!-- Custom Pagination -->
-    <!-- Simplified Pagination -->
-    <div class="flex justify-between items-center mt-4 text-sm">
-      <p>
-        Showing {{ start + 1 }} to
-        {{ Math.min(start + itemsPerPage, filteredEmployees.length) }} of
-        {{ filteredEmployees.length }} employees
-      </p>
-
-      <div class="flex items-center gap-4">
-        <!-- Previous Button -->
-        <button
-          @click="currentPage = Math.max(currentPage - 1, 1)"
-          :disabled="currentPage === 1"
-          class="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          <i class="pi pi-angle-left"></i>
-        </button>
-
-        <!-- Current Page Indicator -->
-        <span class="text-sm">
-          Page {{ currentPage }} of {{ totalPages }}
-        </span>
-
-        <!-- Next Button -->
-        <button
-          @click="currentPage = Math.min(currentPage + 1, totalPages)"
-          :disabled="currentPage === totalPages"
-          class="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          <i class="pi pi-angle-right"></i>
-        </button>
-      </div>
+    <div
+      v-if="!loading && !filteredEmployees.length"
+      class="w-[350px] mt-[200px] mx-auto"
+    >
+      <LottieAnimation animationPath="/animation/no-data.json" />
+      <p class="text-center font-bold">No Data Found</p>
     </div>
   </div>
 

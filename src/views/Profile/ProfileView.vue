@@ -33,11 +33,11 @@ const tabs = [
         <div class="space-y-1">
           <h2 class="font-semibold capitalize text-[20px]">{{ companyDetails.name }}</h2>
           <div class="flex gap-4 text-[14px]">
-            <p>Software company</p>
-            <p>IT specialist</p>
+            <p>{{ companyDetails.organisation }}</p>
+            <p>{{ companyDetails.industry }}</p>
           </div>
           <div class="flex gap-4 text-[14px]">
-            <p>200 Employees Involved</p>
+            <p>{{ companyDetails.teamSize }} Employees Involved</p>
             <p>It’s been 7 Years</p>
           </div>
         </div>
