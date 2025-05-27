@@ -7,15 +7,13 @@ import { storeToRefs } from "pinia";
 import LottieAnimation from "@/components/LottieAnimation.vue";
 
 const employeeStore = useEmployeeStore();
-const { allEmployeeData, loading, page, limit } = storeToRefs(employeeStore);
+const { allEmployeeData, loading, page, limit, totalPages } = storeToRefs(employeeStore);
 
 const searchQuery = ref("");
 const filterDept = ref("");
 const showModal = ref(false);
 const showDeleteModal = ref(false);
 const selectedEmployee = ref(null);
-const currentPage = ref(1);
-const itemsPerPage = 7;
 
 const filteredEmployees = computed(() => {
   return allEmployeeData.value.filter((emp) => {
@@ -175,7 +173,7 @@ const prevPage = () => {
           }"
         ></button>
 
-        <p>Page {{ page }}</p>
+        <p>Page {{ page }} of {{ totalPages }}</p>
 
         <button
           @click="nextPage"

@@ -9,6 +9,7 @@ export const useLeaveStore = defineStore("leave", () => {
   const loading = ref(false)
   const page = ref(1)
   const limit = ref(10)
+  const totalPages = ref("")
 
   const getUserLeaves = async () => {
     try {
@@ -24,6 +25,7 @@ export const useLeaveStore = defineStore("leave", () => {
         "/admin"
       );
       leaveData.value = response?.leaves;
+      totalPages.value = response?.totalPages
       manageResponse(response, {method : "GET"})
     } catch (error) {
       console.error("Error in leave", error);
@@ -69,6 +71,7 @@ export const useLeaveStore = defineStore("leave", () => {
     acceptRejectLeave,
     loading,
     page,
-    limit
+    limit,
+    totalPages
   };
 });
