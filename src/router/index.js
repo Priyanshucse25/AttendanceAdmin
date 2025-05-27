@@ -7,9 +7,10 @@ import HomeView from "../views/HomeView.vue";
 import EmployeeView from "@/views/Employee/EmployeeView.vue";
 import SalaryView from "@/views/SalaryView.vue";
 import LeaveView from "@/views/LeaveView.vue";
-import ProfileView from "@/views/Profile/ProfileView.vue"
-import LoginView from "@/views/LoginView.vue"
-import SignUpView from "@/views/SignUpView.vue"
+import ProfileView from "@/views/Profile/ProfileView.vue";
+import LoginView from "@/views/LoginView.vue";
+import SignUpView from "@/views/SignupView.vue";
+import OtpVerify from "@/views/OtpVerify.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -68,8 +69,15 @@ const router = createRouter({
           name: "signup",
           component: SignUpView,
         },
-      ]
+       
+      ],
+      
     },
+     {
+          path: "/OtpVerify",
+          name: "OtpVerify",
+          component: OtpVerify,
+        },
   ],
 });
 

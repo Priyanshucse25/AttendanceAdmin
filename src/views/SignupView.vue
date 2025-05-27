@@ -2,7 +2,11 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth.js";
+import axios from "axios";
 import LottieAnimation from "@/components/LottieAnimation.vue";
+
+const router = useRouter();
+const auth = useAuthStore();
 
 const name = ref("");
 const email = ref("");
@@ -17,9 +21,6 @@ const showPassword = ref(false);
 const checkTnC = ref(false);
 const requested = ref(false);
 
-const router = useRouter();
-const auth = useAuthStore();
-
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value;
 };
@@ -28,8 +29,15 @@ const signup = async () => {
   error.value = "";
   message.value = "";
 
-  // Validation
-  if (!name.value || !email.value || !password.value || !confirmPassword.value || !organisation.value || !industry.value || !teamSize.value) {
+  if (
+    !name.value ||
+    !email.value ||
+    !password.value ||
+    !confirmPassword.value ||
+    !organisation.value ||
+    !industry.value ||
+    !teamSize.value
+  ) {
     error.value = "Please fill in all fields.";
     return;
   }
@@ -46,19 +54,36 @@ const signup = async () => {
 
   try {
     requested.value = true;
-    const msg = await auth.signupAdmin({
+    
+    // Store all signup data in localStorage for OTP page
+    localStorage.setItem("signupEmail", email.value);
+    localStorage.setItem("signupName", name.value);
+    localStorage.setItem("signupPassword", password.value);
+    localStorage.setItem("signupOrganisation", organisation.value);
+    localStorage.setItem("signupIndustry", industry.value);
+    localStorage.setItem("signupTeamSize", teamSize.value);
+
+    const payload = {
       name: name.value,
       email: email.value,
       password: password.value,
       organisation: organisation.value,
       industry: industry.value,
-      teamSize: teamSize.value
-    });
-    message.value = msg || "Signup successful!";
-    setTimeout(() => router.push("/login"), 1500);
+      teamSize: teamSize.value,
+    };
+
+    const { data } = await axios.post("http://192.168.1.8:8000/admin/signup", payload);
+
+    if (data.success) {
+      // Navigate to OTP verification page immediately
+      router.push("/otp-verify");
+    } else {
+      error.value = "Failed to send OTP.";
+    }
   } catch (err) {
-    error.value = err.response?.data?.message || "Signup failed.";
-  }finally{
+    error.value = err.response?.data?.message || "Failed to send OTP.";
+    console.error("Signup error:", err);
+  } finally {
     requested.value = false;
   }
 };
@@ -66,30 +91,22 @@ const signup = async () => {
 
 <template>
   <div class="min-h-screen flex items-center justify-center bg-white">
+    <!-- Left Side Image -->
     <div class="w-[50%] p-2">
-      <img src="/images/auth-image.png" alt="" />
+      <img src="/images/auth-image.png" alt="auth-image" />
     </div>
 
+    <!-- Right Side Form -->
     <div class="w-[50%] h-screen">
       <div class="flex flex-col mx-auto items-start justify-center h-full w-[70%] space-y-4">
-        <div class="space-y-0">
-          <h2 class="text-[30px] font-bold text-left">Create an account</h2>
-        </div>
+        <h2 class="text-[30px] font-bold text-left">Create an account</h2>
 
-        <!-- Name -->
-        <input v-model="name" type="text" placeholder="Name" class="mb-3 w-full p-2 border rounded-md outline-none" />
+        <input v-model="name" type="text" placeholder="Name" class="mb-3 w-full p-2 border rounded-md" />
+        <input v-model="email" type="email" placeholder="Email" class="mb-3 w-full p-2 border rounded-md" />
+        <input v-model="organisation" type="text" placeholder="Organisation name" class="mb-3 w-full p-2 border rounded-md" />
+        <input v-model="industry" type="text" placeholder="Industry Type" class="mb-3 w-full p-2 border rounded-md" />
 
-        <!-- Email -->
-        <input v-model="email" type="email" placeholder="Email" class="mb-3 w-full p-2 border rounded-md outline-none" />
-
-        <!-- Organisation -->
-        <input v-model="organisation" type="text" placeholder="Organisation name" class="mb-3 w-full p-2 border rounded-md outline-none" />
-
-        <!-- Industry -->
-        <input v-model="industry" type="text" placeholder="Industry Type" class="mb-3 w-full p-2 border rounded-md outline-none" />
-
-        <!-- Team Size Dropdown -->
-        <select v-model="teamSize" class="mb-3 w-full p-2 border rounded-md outline-none">
+        <select v-model="teamSize" class="mb-3 w-full p-2 border rounded-md">
           <option disabled value="">Select Team Size</option>
           <option>1-10</option>
           <option>11-50</option>
@@ -98,40 +115,35 @@ const signup = async () => {
           <option>500+</option>
         </select>
 
-        <!-- Password -->
-        <div class="w-full border rounded-md px-4 bg-transparent flex items-center justify-between">
-          <input :type="showPassword ? 'text' : 'password'" v-model="password" placeholder="Enter Password" class="bg-transparent w-full py-2 outline-none" />
+        <div class="w-full border rounded-md px-4 flex items-center justify-between">
+          <input :type="showPassword ? 'text' : 'password'" v-model="password" placeholder="Enter Password" class="w-full py-2 bg-transparent outline-none" />
           <button type="button" @click="togglePasswordVisibility" class="pi" :class="showPassword ? 'pi-eye-slash' : 'pi-eye'"></button>
         </div>
 
-        <!-- Confirm Password -->
-        <input v-model="confirmPassword" :type="showPassword ? 'text' : 'password'" placeholder="Confirm Password" class="mb-3 w-full p-2 border rounded-md outline-none" />
+        <input v-model="confirmPassword" :type="showPassword ? 'text' : 'password'" placeholder="Confirm Password" class="mb-3 w-full p-2 border rounded-md" />
 
-        <!-- Terms Checkbox -->
         <div class="flex items-center gap-2">
-          <input type="checkbox" v-model="checkTnC" id="tnc" class="cursor-pointer" />
-          <label for="tnc" class="cursor-pointer text-[14px]">
-            I agree the
-            <a href="/terms-and-conditions" target="_blank" class="hover:underline text-custom-blue">XYZ T&C</a> and
-            <a href="/terms-and-conditions" target="_blank" class="hover:underline text-custom-blue">Privacy Policy</a>
+          <input type="checkbox" v-model="checkTnC" id="tnc" />
+          <label for="tnc" class="text-sm">
+            I agree to the
+            <a href="/terms-and-conditions" class="text-blue-600 hover:underline">T&C</a> and
+            <a href="/privacy-policy" class="text-blue-600 hover:underline">Privacy Policy</a>
           </label>
         </div>
 
-        <!-- Messages -->
-        <p v-if="message" class="text-green-600 mt-2">{{ message }}</p>
-        <p v-if="error" class="text-red-500 mt-2">{{ error }}</p>
+        <p v-if="message" class="text-green-600">{{ message }}</p>
+        <p v-if="error" class="text-red-600">{{ error }}</p>
 
-        <!-- Signup Button -->
         <button
           @click="signup"
-          :disabled="!checkTnC || requested" 
+          :disabled="!checkTnC || requested"
           class="w-full py-2 rounded-md"
           :class="checkTnC ? 'bg-[#387ED1] text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
         >
-         <div v-if="requested" class="w-6 mx-auto">
-            <lottieAnimation animationPath="/animation/small-loading.json"/>
+          <div v-if="requested" class="w-6 mx-auto">
+            <LottieAnimation animationPath="/animation/small-loading.json" />
           </div>
-          <p v-else>SignUp</p>
+          <p v-else>Sign Up</p>
         </button>
 
         <p class="text-sm mt-3 text-center mx-auto">
@@ -142,7 +154,3 @@ const signup = async () => {
     </div>
   </div>
 </template>
-
-
-
-

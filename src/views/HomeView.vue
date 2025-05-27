@@ -84,7 +84,7 @@ const prevPage = () => {
 </script>
 
 <template>
-  <main class="bg-white w-full rounded-md p-6">
+  <main class="bg-white w-full rounded-md p-6 overflow-y-auto">
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-xl font-semibold">This Month’s Attendance</h2>
