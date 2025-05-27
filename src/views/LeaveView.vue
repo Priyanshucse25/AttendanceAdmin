@@ -1,11 +1,32 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useLeaveStore } from "@/stores/leaveStore";
 import { storeToRefs } from "pinia";
+import LottieAnimation from "@/components/LottieAnimation.vue";
 
 const leaveStore = useLeaveStore();
 
-const { leaveData } = storeToRefs(leaveStore);
+const { leaveData, loading, page_id, page_size } = storeToRefs(leaveStore);
+
+const searchName = ref("");
+const selectedDepartment = ref("");
+const selectedStatus = ref("");
+
+const filteredLeaves = computed(() => {
+  return leaveData.value.filter((leave) => {
+    const matchesName = leave.name
+      .toLowerCase()
+      .includes(searchName.value.toLowerCase());
+    const matchesDepartment = selectedDepartment.value
+      ? leave.department?.toLowerCase() ===
+        selectedDepartment.value.toLowerCase()
+      : true;
+    const matchesStatus = selectedStatus.value
+      ? leave.status?.toLowerCase() === selectedStatus.value.toLowerCase()
+      : true;
+    return matchesName && matchesDepartment && matchesStatus;
+  });
+});
 
 function formatDate(isoString) {
   if (!isoString) return "";
@@ -21,18 +42,26 @@ const updateLeave = async (id, statusType) => {
   }
 };
 
-const currentPage = ref(1);
-const itemsPerPage = 7;
+function getLeaveDuration(from, to) {
+  const start = new Date(from);
+  const end = new Date(to);
+  // Round to whole days (ignore time zone offsets)
+  const diffTime = end.setHours(0, 0, 0, 0) - start.setHours(0, 0, 0, 0);
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  return diffDays > 0 ? diffDays : 0;
+}
 
-const paginatedLeaves = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  return leaveData.value.slice(start, end);
+watch(page_id, () => {
+  leaveStore.getUserLeaves(true);
 });
 
-const totalPages = computed(() =>
-  Math.ceil(leaveData.value.length / itemsPerPage)
-);
+const nextPage = () => {
+  page_id.value++;
+};
+
+const prevPage = () => {
+  if (page_id.value > 0) page_id.value--;
+};
 </script>
 
 <template>
@@ -47,136 +76,164 @@ const totalPages = computed(() =>
     <div class="flex items-center gap-2">
       <input
         type="text"
+        v-model="searchName"
         placeholder="Search by employee"
         class="bg-black bg-opacity-10 px-4 py-1 rounded outline-none"
       />
 
-      <div
-        class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4"
+      <select
+        v-model="selectedDepartment"
+        class="bg-black bg-opacity-10 px-2 py-1 rounded outline-none"
       >
-        <p>Employee Id</p>
-        <i class="pi pi-angle-down"></i>
-      </div>
+        <option value="">All Departments</option>
+        <option value="HR">HR</option>
+        <option value="Engineering">Engineering</option>
+        <option value="Sales">Sales</option>
+        <!-- Add your department options dynamically if available -->
+      </select>
 
-      <div
-        class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4"
+      <select
+        v-model="selectedStatus"
+        class="bg-black bg-opacity-10 px-2 py-1 rounded outline-none"
       >
-        <p>Department</p>
-        <i class="pi pi-angle-down"></i>
-      </div>
-
-      <div
-        class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4"
-      >
-        <p>Status</p>
-        <i class="pi pi-angle-down"></i>
-      </div>
+        <option value="">All Status</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+        <option value="pending">Pending</option>
+      </select>
     </div>
 
-    <div class="mt-4 w-full overflow-auto">
-      <table class="min-w-[1200px] w-full table-auto text-left border-collapse">
-        <thead class="bg-gray-100 text-gray-500 text-sm whitespace-nowrap">
-          <tr>
-            <th class="py-3 px-4">Sr. No</th>
-            <th class="py-3 px-4">Employee Name & ID</th>
-            <th class="py-3 px-4">Leave left</th>
-            <th class="py-3 px-4">Department</th>
-            <th class="py-3 px-4">Leave type</th>
-            <th class="py-3 px-4">Reason</th>
-            <th class="py-3 px-4">From</th>
-            <th class="py-3 px-4">To</th>
-            <th class="py-3 px-4">Total days</th>
-            <th class="py-3 px-4">Status</th>
-            <th class="py-3 px-4">Action</th>
-          </tr>
-        </thead>
-        <tbody class="text-sm text-gray-700 whitespace-nowrap">
-          <tr
-            v-for="(employee, index) in paginatedLeaves"
-            :key="employee._id"
-            class="border-b border-gray-200"
-          >
-            <td class="py-3 px-4">{{ index + 1 }}</td>
-            <td class="py-3 px-4 flex items-center gap-3">
-              <img
-                :src="employee.photo"
-                class="w-8 h-8 rounded-full object-cover"
-                alt="avatar"
-              />
-              <div>
-                <p class="font-medium">{{ employee.name }}</p>
-                <p class="text-xs text-gray-400">{{ employee.userId }}</p>
-              </div>
-            </td>
-            <td class="py-3 px-4">50</td>
-            <td class="py-3 px-4">not done</td>
-            <td class="py-3 px-4">{{ employee.leaveType }}</td>
-            <td class="py-3 px-4">{{ employee.reason }}</td>
-            <td class="py-3 px-4">{{ formatDate(employee.from) }}</td>
-            <td class="py-3 px-4">{{ formatDate(employee.to) }}</td>
-            <td class="py-3 px-4">20</td>
-            <td class="py-3 px-4">
-              <span
-                :class="[
-                  'text-xs px-2 py-1 rounded capitalize',
-                  employee.status === 'pending'
-                    ? 'bg-yellow-100 text-yellow-600'
-                    : employee.status === 'rejected'
-                    ? 'bg-red-100 text-red-600'
-                    : employee.status === 'approved'
-                    ? 'bg-green-100 text-green-600'
-                    : 'bg-gray-100 text-gray-600', // fallback for unknown status
-                ]"
-              >
-                {{ employee.status }}
-              </span>
-            </td>
-            <td class="py-3 px-4 flex items-center gap-2">
-              <button
-                @click="updateLeave(employee._id, 'approved')"
-                class="border border-blue-500 text-blue-500 hover:bg-blue-50 px-3 py-1 rounded text-xs"
-              >
-                Accept
-              </button>
-              <button
-                @click="updateLeave(employee._id, 'rejected')"
-                class="pi pi-times text-red-500"
-              ></button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <!-- Pagination Controls -->
-    <div class="flex justify-between items-center mt-4 text-sm px-2">
-      <p>
-        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to
-        {{ Math.min(currentPage * itemsPerPage, leaveData.length) }} of
-        {{ leaveData.length }} requests
-      </p>
-
-      <div class="flex items-center gap-4">
-        <!-- Prev -->
-        <button
-          @click="currentPage = Math.max(1, currentPage - 1)"
-          :disabled="currentPage === 1"
-          class="px-3 py-1 border rounded disabled:opacity-50"
+    <template v-if="filteredLeaves && filteredLeaves.length > 0">
+      <div class="mt-4 w-full overflow-auto no-scrollbar">
+        <table
+          class="min-w-[1200px] w-full table-auto text-left border-collapse"
         >
-          <i class="pi pi-angle-left"></i>
-        </button>
-
-        <!-- Page -->
-        <span class="text-sm">Page {{ currentPage }} of {{ totalPages }}</span>
-
-        <!-- Next -->
-        <button
-          @click="currentPage = Math.min(totalPages, currentPage + 1)"
-          :disabled="currentPage === totalPages"
-          class="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          <i class="pi pi-angle-right"></i>
-        </button>
+          <thead class="bg-gray-100 text-gray-500 text-sm whitespace-nowrap">
+            <tr>
+              <th class="py-3 px-4">Sr. No</th>
+              <th class="py-3 px-4">Employee Name & ID</th>
+              <th class="py-3 px-4">Leave left</th>
+              <th class="py-3 px-4">Department</th>
+              <th class="py-3 px-4">Leave type</th>
+              <th class="py-3 px-4">Reason</th>
+              <th class="py-3 px-4">From</th>
+              <th class="py-3 px-4">To</th>
+              <th class="py-3 px-4">Total days</th>
+              <th class="py-3 px-4">Status</th>
+              <th class="py-3 px-4">Action</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm text-gray-700 whitespace-nowrap">
+            <tr
+              v-for="(employee, index) in filteredLeaves"
+              :key="employee._id"
+              class="border-b border-gray-200"
+            >
+              <td class="py-3 px-4">{{ index + 1 }}</td>
+              <td class="py-3 px-4 flex items-center gap-3">
+                <img
+                  :src="employee.photo"
+                  class="w-8 h-8 rounded-full object-cover"
+                  alt="avatar"
+                />
+                <div>
+                  <p class="font-medium capitalize">{{ employee.name }}</p>
+                  <p class="text-xs text-gray-400">{{ employee.userId }}</p>
+                </div>
+              </td>
+              <td class="py-3 px-4">{{ 14 - employee.totalLeave }}</td>
+              <td class="py-3 px-4">{{ employee.department }}</td>
+              <td class="py-3 px-4">{{ employee.leaveType }}</td>
+              <td class="py-3 px-4">{{ employee.reason }}</td>
+              <td class="py-3 px-4">{{ formatDate(employee.from) }}</td>
+              <td class="py-3 px-4">{{ formatDate(employee.to) }}</td>
+              <td class="py-3 px-4">
+                <p
+                  class="bg-blue-100 text-blue-500 font-semibold px-1 py-1 rounded-md text-center"
+                >
+                  {{ getLeaveDuration(employee.from, employee.to) }}
+                </p>
+              </td>
+              <td class="py-3 px-4">
+                <span
+                  :class="[
+                    'text-xs px-2 py-1 rounded capitalize',
+                    employee.status === 'pending'
+                      ? 'bg-yellow-100 text-yellow-600'
+                      : employee.status === 'rejected'
+                      ? 'bg-red-100 text-red-600'
+                      : employee.status === 'approved'
+                      ? 'bg-green-100 text-green-600'
+                      : 'bg-gray-100 text-gray-600', // fallback for unknown status
+                  ]"
+                >
+                  {{ employee.status }}
+                </span>
+              </td>
+              <td class="py-3 px-4 flex items-center gap-2">
+                <button
+                  @click="updateLeave(employee._id, 'approved')"
+                  class="border border-blue-500 text-blue-500 px-3 py-1 rounded text-xs"
+                >
+                  Accept
+                </button>
+                <button
+                  @click="updateLeave(employee._id, 'rejected')"
+                  class="border border-red-500 text-red-500 px-3 py-1 rounded text-xs"
+                >
+                  Reject
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+      <!-- Pagination Controls -->
+      <div
+        class="flex justify-center items-center my-4 gap-4 text-text sm-text"
+      >
+        <button
+          @click="prevPage"
+          :disabled="page_id === 1"
+          :class="{
+            'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-left': true,
+            'cursor-pointer': page_id > 1,
+            'cursor-not-allowed': page_id === 1
+          }"
+        ></button>
+
+        <p>Page {{ page_id }}</p>
+
+        <button
+          @click="nextPage"
+          :disabled="filteredLeaves.length < page_size"
+          :class="{
+            'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
+            'cursor-pointer': filteredLeaves.length >= page_size,
+            'cursor-not-allowed': filteredLeaves.length < page_size
+          }"
+        ></button>
+      </div>
+    </template>
+
+    <div v-if="loading" class="w-[350px] mx-auto mt-[100px]">
+      <LottieAnimation animationPath="/animation/loading.json" />
+    </div>
+
+    <div
+      v-if="!loading && filteredLeaves.length === 0"
+      class="w-[350px] mt-[200px] mx-auto"
+    >
+      <LottieAnimation animationPath="/animation/no-data.json" />
+      <p class="text-center font-bold">No matching results found</p>
+    </div>
+
+    <div
+      v-if="!loading && !leaveData.length"
+      class="w-[350px] mt-[200px] mx-auto"
+    >
+      <LottieAnimation animationPath="/animation/no-data.json" />
+      <p class="text-center font-bold">No Data Found</p>
     </div>
   </main>
 </template>

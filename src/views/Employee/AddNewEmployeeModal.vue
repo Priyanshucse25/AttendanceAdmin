@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from "vue";
 import { useEmployeeStore } from "@/stores/employeeStore";
+import LottieAnimation from "@/components/LottieAnimation.vue";
 
 // Props
 const props = defineProps({
@@ -16,6 +17,7 @@ const employeeStore = useEmployeeStore();
 const tabs = ["Basic Info", "Contact info", "Upload image", "Job Info"];
 const tabTitles = ["Personal info", "Contact info", "Profile info", "Job Info"];
 const activeTab = ref(0);
+const requested = ref(false);
 
 const formData = ref({
   userName: "",
@@ -214,6 +216,7 @@ const submitEmployeeForm = async () => {
   }
 
   try {
+    requested.value = true;
     if (props.employee?.userId) {
       await updateEmployeeData(props.employee.userId);
     } else {
@@ -226,6 +229,8 @@ const submitEmployeeForm = async () => {
   } catch (error) {
     console.error("Submission Error:", error);
     errors.value.push("An error occurred during submission");
+  }finally{
+    requested.value = false;
   }
 };
 
@@ -486,9 +491,13 @@ onBeforeUnmount(() => {
           </button>
           <button
             @click="nextStep"
+            :disabled="requested" 
             class="px-6 py-2 rounded-md bg-indigo-600 text-white"
           >
-            {{ activeTab === tabs.length - 1 ? 'Submit' : 'Next' }}
+            <div v-if="requested" class="w-6 mx-auto">
+              <lottieAnimation animationPath="/animation/small-loading.json"/>
+            </div>
+            <p v-else>{{ activeTab === tabs.length - 1 ? 'Submit' : 'Next' }}</p>
           </button>
         </div>
       </div>

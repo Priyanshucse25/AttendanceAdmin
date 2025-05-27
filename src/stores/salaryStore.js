@@ -6,14 +6,19 @@ import { ref } from "vue";
 export const usesalaryStore = defineStore("salary", () => {
     const endpoint = "salarydetails"
     const salaryData = ref([])
+    const loading = ref(false)
+    const page_id = ref(1)
+    const page_size = ref(10)
 
     const getUserSalary = async() => {
         try {
-            const response = await makeRequest(endpoint, "GET", {}, {}, {}, 0, null)
+            loading.value = true;
+            const response = await makeRequest(endpoint, "GET", {}, {}, {page_id : page_id.value, page_size: page_size.value}, 0, null)
             salaryData.value = response?.userData
-            console.log(salaryData.value)
         } catch (error) {
             console.error("Error in salary" ,error)
+        } finally{
+            loading.value = false;
         }
     }
 
@@ -22,6 +27,9 @@ export const usesalaryStore = defineStore("salary", () => {
 
     return{
         salaryData,
-        getUserSalary
+        getUserSalary,
+        loading,
+        page_id,
+        page_size
     }
 })

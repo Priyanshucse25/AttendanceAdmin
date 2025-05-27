@@ -1,40 +1,34 @@
 import { toast } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
 
-export function manageResponse(response, options = {}) {
+export function manageResponse(status, message, options = {}) {
   const {
     method = 'GET',
     successToast = true,
     errorToast = true,
   } = options
 
-  // 💡 Skip toast for GET
+  // 💡 Skip toast for GET requests
   if (method.toUpperCase() === 'GET') return
 
-  // 💡 Ensure response is a plain object
-  if (!response || typeof response !== 'object' || Array.isArray(response)) {
-    if (errorToast) toast.error('Invalid response')
-    console.error('Invalid or missing response:', response)
-    return
-  }
+  // 💡 Normalize status and message
+  const normalizedStatus = (status || 'unknown').toString().toLowerCase()
+  let normalizedMessage = message || 'Something went wrong.'
 
-  const status = response.status || 'unknown'
-  let message = response.message || 'Something went wrong.'
-
-  // 💡 Handle object messages (prevent [object Object])
-  if (typeof message === 'object') {
+  // 💡 Handle object messages to avoid "[object Object]"
+  if (typeof normalizedMessage === 'object') {
     try {
-      message = JSON.stringify(message)
+      normalizedMessage = JSON.stringify(normalizedMessage)
     } catch {
-      message = 'Invalid message format.'
+      normalizedMessage = 'Invalid message format.'
     }
   }
 
-  if (status === 'success' && successToast) {
-    toast.success(message)
-  } else if (status === 'error' && errorToast) {
-    toast.error(message)
+  if (normalizedStatus === 'success' && successToast) {
+    toast.success(normalizedMessage)
+  } else if (normalizedStatus === 'error' && errorToast) {
+    toast.error(normalizedMessage)
   } else {
-    toast.info(message)
+    toast.info(normalizedMessage)
   }
 }

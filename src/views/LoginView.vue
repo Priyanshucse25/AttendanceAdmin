@@ -1,3 +1,38 @@
+<script setup>
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth.js";
+import { toast } from "vue3-toastify";
+import LottieAnimation from "@/components/LottieAnimation.vue";
+
+const email = ref("");
+const password = ref("");
+const error = ref("");
+const router = useRouter();
+const auth = useAuthStore();
+const showPassword = ref(false);
+const checkTnC = ref(false);
+const requested = ref(false);
+
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value;
+};
+
+const login = async () => {
+  try {
+    requested.value = true;
+    error.value = "";
+    await auth.loginAdmin({ email: email.value, password: password.value });
+    router.push("/");
+    toast.success("Logged out successfully");
+  } catch (err) {
+    error.value = err.response?.data?.message || "Login failed.";
+  }finally{
+     requested.value = false;
+  }
+};
+</script>
+
 <template>
   <div class="min-h-screen flex items-start justify-center bg-white">
     <div class="w-[50%] p-2">
@@ -64,6 +99,7 @@
         </div>
         <button
           @click="login"
+          :disabled="!checkTnC || requested" 
           class="w-full bg-[#387ED1] text-white p-2 rounded mt-3"
           :class="[
             'w-full py-2 rounded-md',
@@ -72,9 +108,12 @@
               : 'bg-gray-300 text-gray-500 cursor-not-allowed',
           ]"
         >
-          Login
+          <div v-if="requested" class="w-6 mx-auto">
+            <lottieAnimation animationPath="/animation/small-loading.json"/>
+          </div>
+          <p v-else>Login</p>
         </button>
-        <p class="text-sm mt-3 text-center">
+        <p class="text-sm mt-3 text-center mx-auto">
           Don't have an account?
           <router-link to="/signup" class="text-blue-600">Signup</router-link>
         </p>
@@ -84,32 +123,4 @@
   </div>
 </template>
 
-<script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import { useAuthStore } from "@/stores/auth.js";
-import { toast } from "vue3-toastify";
 
-const email = ref("");
-const password = ref("");
-const error = ref("");
-const router = useRouter();
-const auth = useAuthStore();
-const showPassword = ref(false);
-const checkTnC = ref(false);
-
-const togglePasswordVisibility = () => {
-  showPassword.value = !showPassword.value;
-};
-
-const login = async () => {
-  try {
-    error.value = "";
-    await auth.loginAdmin({ email: email.value, password: password.value });
-    router.push("/");
-    toast.success("Logged out successfully");
-  } catch (err) {
-    error.value = err.response?.data?.message || "Login failed.";
-  }
-};
-</script>
