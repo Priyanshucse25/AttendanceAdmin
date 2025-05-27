@@ -1,35 +1,98 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+import { useProfileStore } from "@/stores/profileStore";
+import { storeToRefs } from "pinia";
 
+const profileStore = useProfileStore();
+const { punchInDetails } = storeToRefs(profileStore);
+
+const isEditing = ref(false);
 const showBreak = ref(false);
+const selectedShift = ref(null);
+
+// Form fields
+const shiftFrom = ref('');
+const shiftTo = ref('');
+const bufferFrom = ref('');
+const bufferTo = ref('');
+const lunchFrom = ref('');
+const lunchTo = ref('');
+const breakFrom = ref('');
+const breakTo = ref('');
+
+// Watch for punchInDetails and set the first one as default
+watch(punchInDetails, (details) => {
+  if (Array.isArray(details) && details.length) {
+    selectedShift.value = details[0]; // default to first shift
+    populateForm(selectedShift.value);
+  }
+}, { immediate: true });
+
+function populateForm(item) {
+  shiftFrom.value = item.shiftTime?.from || '';
+  shiftTo.value = item.shiftTime?.to || '';
+  bufferFrom.value = item.bufferTime?.from || '';
+  bufferTo.value = item.bufferTime?.to || '';
+  lunchFrom.value = item.lunchTime?.from || '';
+  lunchTo.value = item.lunchTime?.to || '';
+}
+
+// Submit form
+const submitChanges = async () => {
+  if (!selectedShift.value) return;
+
+  const updatedData = {
+    _id: selectedShift.value._id,
+    shiftTime: { from: shiftFrom.value, to: shiftTo.value },
+    bufferTime: { from: bufferFrom.value, to: bufferTo.value },
+    lunchTime: { from: lunchFrom.value, to: lunchTo.value },
+    breaks: breakFrom.value && breakTo.value ? [{ from: breakFrom.value, to: breakTo.value }] : []
+  };
+
+  await profileStore.editPunchInDetails(updatedData);
+  isEditing.value = false;
+};
 </script>
+
+
+
 
 <template>
   <div class="space-y-6 mt-6 max-w-4xl">
-    <!-- Section: Shift actual time -->
+    <!-- Edit Button -->
+    <div class="flex justify-end">
+      <button
+        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        @click="isEditing = !isEditing"
+      >
+        {{ isEditing ? "Cancel Edit" : "Edit" }}
+      </button>
+    </div>
+
+    <!-- Shift Time -->
     <div>
       <h3 class="font-semibold text-gray-700 mb-2">Shift actual time</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input type="time" placeholder="E.g 09:20" class="input-field" />
-        <input type="time" placeholder="E.g 09:20" class="input-field" />
+        <input :disabled="!isEditing" type="time" v-model="shiftFrom" class="input-field" />
+        <input :disabled="!isEditing" type="time" v-model="shiftTo" class="input-field" />
       </div>
     </div>
 
-    <!-- Section: Buffer minutes -->
+    <!-- Buffer Time -->
     <div>
       <h3 class="font-semibold text-gray-700 mb-2">Buffer minutes</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input type="time" placeholder="E.g 09:20" class="input-field" />
-        <input type="time" placeholder="E.g 19:20" class="input-field" />
+        <input :disabled="!isEditing" type="time" v-model="bufferFrom" class="input-field" />
+        <input :disabled="!isEditing" type="time" v-model="bufferTo" class="input-field" />
       </div>
     </div>
 
-    <!-- Section: Lunch time -->
+    <!-- Lunch Time -->
     <div>
       <h3 class="font-semibold text-gray-700 mb-2">Lunch time</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input type="time" placeholder="E.g 09:20" class="input-field" />
-        <input type="time" placeholder="E.g 09:20" class="input-field" />
+        <input :disabled="!isEditing" type="time" v-model="lunchFrom" class="input-field" />
+        <input :disabled="!isEditing" type="time" v-model="lunchTo" class="input-field" />
       </div>
     </div>
 
@@ -50,13 +113,16 @@ const showBreak = ref(false);
       <input type="time" placeholder="Break Log Out" class="input-field" />
     </div>
 
-    <!-- Action Buttons -->
-    <div class="flex justify-end gap-4 pt-6">
-      <button class="px-6 py-2 bg-gray-100 text-gray-700 rounded">Cancel</button>
-      <button class="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Done</button>
+    <!-- Submit Button -->
+    <div v-if="isEditing" class="flex justify-end gap-4 pt-6">
+      <button class="px-6 py-2 bg-gray-100 text-gray-700 rounded" @click="isEditing = false">Cancel</button>
+      <button class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700" @click="submitChanges">
+        Submit
+      </button>
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .input-field {

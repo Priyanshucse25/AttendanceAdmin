@@ -9,12 +9,14 @@ export const useEmployeeStore = defineStore("employee", () => {
   const employeeData = ref([]);
   const page = ref(1)
   const limit = ref(10)
+  const totalPages = ref("")
 
   const getallEmployees = async () => {
     loading.value = true;
     try {
       const response = await makeRequest("/user", "GET", {}, {}, {page : page.value, limit: limit.value}, 0, null, "/admin/allusers/all");
       allEmployeeData.value = response?.users;
+      totalPages.value = response?.totalPages
     } catch (error) {
       console.error("Error in fetching all employes data", error);
     } finally{
@@ -59,7 +61,8 @@ export const useEmployeeStore = defineStore("employee", () => {
     deleteEmployee,
     loading,
     page,
-    limit
+    limit,
+    totalPages
   };
 });
 
