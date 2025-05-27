@@ -7,7 +7,7 @@ import { storeToRefs } from "pinia";
 import LottieAnimation from "@/components/LottieAnimation.vue";
 
 const employeeStore = useEmployeeStore();
-const { allEmployeeData, loading, page_id, page_size } = storeToRefs(employeeStore);
+const { allEmployeeData, loading, page, limit } = storeToRefs(employeeStore);
 
 const searchQuery = ref("");
 const filterDept = ref("");
@@ -44,16 +44,16 @@ function openDeleteModal(employee) {
   showDeleteModal.value = true;
 }
 
-watch(page_id, () => {
+watch(page, () => {
   employeeStore.getallEmployees(true);
 });
 
 const nextPage = () => {
-  page_id.value++;
+  page.value++;
 };
 
 const prevPage = () => {
-  if (page_id.value > 0) page_id.value--;
+  if (page.value > 0) page.value--;
 };
 </script>
 
@@ -167,23 +167,23 @@ const prevPage = () => {
       >
         <button
           @click="prevPage"
-          :disabled="page_id === 1"
+          :disabled="page === 1"
           :class="{
             'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-left': true,
-            'cursor-pointer': page_id > 1,
-            'cursor-not-allowed': page_id === 1
+            'cursor-pointer': page > 1,
+            'cursor-not-allowed': page === 1
           }"
         ></button>
 
-        <p>Page {{ page_id }}</p>
+        <p>Page {{ page }}</p>
 
         <button
           @click="nextPage"
-          :disabled="filteredEmployees.length < page_size"
+          :disabled="filteredEmployees.length < limit"
           :class="{
             'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
-            'cursor-pointer': filteredEmployees.length >= page_size,
-            'cursor-not-allowed': filteredEmployees.length < page_size
+            'cursor-pointer': filteredEmployees.length >= limit,
+            'cursor-not-allowed': filteredEmployees.length < limit
           }"
         ></button>
       </div>

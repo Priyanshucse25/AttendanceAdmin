@@ -6,7 +6,7 @@ import LottieAnimation from "@/components/LottieAnimation.vue";
 
 const leaveStore = useLeaveStore();
 
-const { leaveData, loading, page_id, page_size } = storeToRefs(leaveStore);
+const { leaveData, loading, page, limit } = storeToRefs(leaveStore);
 
 const searchName = ref("");
 const selectedDepartment = ref("");
@@ -51,16 +51,16 @@ function getLeaveDuration(from, to) {
   return diffDays > 0 ? diffDays : 0;
 }
 
-watch(page_id, () => {
+watch(page, () => {
   leaveStore.getUserLeaves(true);
 });
 
 const nextPage = () => {
-  page_id.value++;
+  page.value++;
 };
 
 const prevPage = () => {
-  if (page_id.value > 0) page_id.value--;
+  if (page.value > 0) page.value--;
 };
 </script>
 
@@ -194,23 +194,23 @@ const prevPage = () => {
       >
         <button
           @click="prevPage"
-          :disabled="page_id === 1"
+          :disabled="page === 1"
           :class="{
             'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-left': true,
-            'cursor-pointer': page_id > 1,
-            'cursor-not-allowed': page_id === 1
+            'cursor-pointer': page > 1,
+            'cursor-not-allowed': page === 1
           }"
         ></button>
 
-        <p>Page {{ page_id }}</p>
+        <p>Page {{ page }}</p>
 
         <button
           @click="nextPage"
-          :disabled="filteredLeaves.length < page_size"
+          :disabled="filteredLeaves.length < limit"
           :class="{
             'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
-            'cursor-pointer': filteredLeaves.length >= page_size,
-            'cursor-not-allowed': filteredLeaves.length < page_size
+            'cursor-pointer': filteredLeaves.length >= limit,
+            'cursor-not-allowed': filteredLeaves.length < limit
           }"
         ></button>
       </div>

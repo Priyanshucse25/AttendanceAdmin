@@ -4,7 +4,7 @@ import { useHomeStore } from "@/stores/homeStore";
 import { storeToRefs } from "pinia";
 
 const homeStore = useHomeStore();
-const { HomeData, page_id, page_size } = storeToRefs(homeStore);
+const { HomeData, page, limit } = storeToRefs(homeStore);
 
 const searchQuery = ref("");
 const filterDept = ref("");
@@ -70,16 +70,16 @@ function closePhotoModal() {
   selectedPhoto.value = "";
 }
 
-watch(page_id, () => {
+watch(page, () => {
   homeStore.getUserHome(true);
 });
 
 const nextPage = () => {
-  page_id.value++;
+  page.value++;
 };
 
 const prevPage = () => {
-  if (page_id.value > 0) page_id.value--;
+  if (page.value > 0) page.value--;
 };
 </script>
 
@@ -209,23 +209,23 @@ const prevPage = () => {
       >
         <button
           @click="prevPage"
-          :disabled="page_id === 1"
+          :disabled="page === 1"
           :class="{
             'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-left': true,
-            'cursor-pointer': page_id > 1,
-            'cursor-not-allowed': page_id === 1
+            'cursor-pointer': page > 1,
+            'cursor-not-allowed': page === 1
           }"
         ></button>
 
-        <p>Page {{ page_id }}</p>
+        <p>Page {{ page }}</p>
 
         <button
           @click="nextPage"
-          :disabled="filteredData.length < page_size"
+          :disabled="filteredData.length < limit"
           :class="{
             'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
-            'cursor-pointer': filteredData.length >= page_size,
-            'cursor-not-allowed': filteredData.length < page_size
+            'cursor-pointer': filteredData.length >= limit,
+            'cursor-not-allowed': filteredData.length < limit
           }"
         ></button>
       </div>
