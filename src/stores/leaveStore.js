@@ -7,8 +7,8 @@ export const useLeaveStore = defineStore("leave", () => {
   const endpoint = "userleave";
   const leaveData = ref([]);
   const loading = ref(false)
-  const page_id = ref(1)
-  const page_size = ref(10)
+  const page = ref(1)
+  const limit = ref(10)
 
   const getUserLeaves = async () => {
     try {
@@ -18,7 +18,7 @@ export const useLeaveStore = defineStore("leave", () => {
         "GET",
         {},
         {},
-        {page_id : page_id.value, page_size: page_size.value},
+        {page : page.value, limit: limit.value},
         0,
         null,
         "/admin"
@@ -68,7 +68,7 @@ export const useLeaveStore = defineStore("leave", () => {
     getUserLeaves,
     acceptRejectLeave,
     loading,
-    page_id,
-    page_size
+    page,
+    limit
   };
 });

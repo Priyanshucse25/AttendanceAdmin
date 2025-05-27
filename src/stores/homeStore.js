@@ -5,8 +5,8 @@ import { ref } from "vue";
 export const useHomeStore = defineStore("home", () => {
   const endpoint = "admin";
   const HomeData = ref([]);
-  const page_id = ref(1)
-  const page_size = ref(10)
+  const page = ref(1)
+  const limit = ref(10)
   const loading = ref(false)
 
   const getUserHome = async () => {
@@ -17,7 +17,7 @@ export const useHomeStore = defineStore("home", () => {
         "GET",
         {},
         {},
-        {page_id : page_id.value, page_size: page_size.value},
+        {page : page.value, limit: limit.value},
         0,
         null,
         "/userdata"
@@ -46,8 +46,8 @@ export const useHomeStore = defineStore("home", () => {
     HomeData,
     getUserHome,
     updateAttendenceStatus, 
-    page_id,
-    page_size,
+    page,
+    limit,
     loading
   };
 });
