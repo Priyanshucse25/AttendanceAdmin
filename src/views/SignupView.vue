@@ -1,3 +1,69 @@
+<script setup>
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth.js";
+import LottieAnimation from "@/components/LottieAnimation.vue";
+
+const name = ref("");
+const email = ref("");
+const password = ref("");
+const confirmPassword = ref("");
+const organisation = ref("");
+const industry = ref("");
+const teamSize = ref("");
+const error = ref("");
+const message = ref("");
+const showPassword = ref(false);
+const checkTnC = ref(false);
+const requested = ref(false);
+
+const router = useRouter();
+const auth = useAuthStore();
+
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value;
+};
+
+const signup = async () => {
+  error.value = "";
+  message.value = "";
+
+  // Validation
+  if (!name.value || !email.value || !password.value || !confirmPassword.value || !organisation.value || !industry.value || !teamSize.value) {
+    error.value = "Please fill in all fields.";
+    return;
+  }
+
+  if (password.value !== confirmPassword.value) {
+    error.value = "Passwords do not match.";
+    return;
+  }
+
+  if (!checkTnC.value) {
+    error.value = "Please accept the terms and conditions.";
+    return;
+  }
+
+  try {
+    requested.value = true;
+    const msg = await auth.signupAdmin({
+      name: name.value,
+      email: email.value,
+      password: password.value,
+      organisation: organisation.value,
+      industry: industry.value,
+      teamSize: teamSize.value
+    });
+    message.value = msg || "Signup successful!";
+    setTimeout(() => router.push("/login"), 1500);
+  } catch (err) {
+    error.value = err.response?.data?.message || "Signup failed.";
+  }finally{
+    requested.value = false;
+  }
+};
+</script>
+
 <template>
   <div class="min-h-screen flex items-center justify-center bg-white">
     <div class="w-[50%] p-2">
@@ -58,13 +124,17 @@
         <!-- Signup Button -->
         <button
           @click="signup"
+          :disabled="!checkTnC || requested" 
           class="w-full py-2 rounded-md"
           :class="checkTnC ? 'bg-[#387ED1] text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
         >
-          Signup
+         <div v-if="requested" class="w-6 mx-auto">
+            <lottieAnimation animationPath="/animation/small-loading.json"/>
+          </div>
+          <p v-else>SignUp</p>
         </button>
 
-        <p class="text-sm mt-3 text-center">
+        <p class="text-sm mt-3 text-center mx-auto">
           Already have an account?
           <router-link to="/login" class="text-blue-600">Login</router-link>
         </p>
@@ -74,64 +144,5 @@
 </template>
 
 
-<script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import { useAuthStore } from "@/stores/auth.js";
 
-const name = ref("");
-const email = ref("");
-const password = ref("");
-const confirmPassword = ref("");
-const organisation = ref("");
-const industry = ref("");
-const teamSize = ref("");
-const error = ref("");
-const message = ref("");
-const showPassword = ref(false);
-const checkTnC = ref(false);
-
-const router = useRouter();
-const auth = useAuthStore();
-
-const togglePasswordVisibility = () => {
-  showPassword.value = !showPassword.value;
-};
-
-const signup = async () => {
-  error.value = "";
-  message.value = "";
-
-  // Validation
-  if (!name.value || !email.value || !password.value || !confirmPassword.value || !organisation.value || !industry.value || !teamSize.value) {
-    error.value = "Please fill in all fields.";
-    return;
-  }
-
-  if (password.value !== confirmPassword.value) {
-    error.value = "Passwords do not match.";
-    return;
-  }
-
-  if (!checkTnC.value) {
-    error.value = "Please accept the terms and conditions.";
-    return;
-  }
-
-  try {
-    const msg = await auth.signupAdmin({
-      name: name.value,
-      email: email.value,
-      password: password.value,
-      organisation: organisation.value,
-      industry: industry.value,
-      teamSize: teamSize.value
-    });
-    message.value = msg || "Signup successful!";
-    setTimeout(() => router.push("/login"), 1500);
-  } catch (err) {
-    error.value = err.response?.data?.message || "Signup failed.";
-  }
-};
-</script>
 

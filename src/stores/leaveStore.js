@@ -6,23 +6,29 @@ import { ref } from "vue";
 export const useLeaveStore = defineStore("leave", () => {
   const endpoint = "userleave";
   const leaveData = ref([]);
+  const loading = ref(false)
+  const page_id = ref(1)
+  const page_size = ref(10)
 
   const getUserLeaves = async () => {
     try {
+      loading.value = true;
       const response = await makeRequest(
         endpoint,
         "GET",
         {},
         {},
-        {},
+        {page_id : page_id.value, page_size: page_size.value},
         0,
         null,
         "/admin"
       );
-      leaveData.value = response?.allLeaveData;
+      leaveData.value = response?.leaves;
       manageResponse(response, {method : "GET"})
     } catch (error) {
       console.error("Error in leave", error);
+    } finally{
+      loading.value = false;
     }
   };
 
@@ -61,5 +67,8 @@ export const useLeaveStore = defineStore("leave", () => {
     leaveData,
     getUserLeaves,
     acceptRejectLeave,
+    loading,
+    page_id,
+    page_size
   };
 });

@@ -8,7 +8,7 @@ const leaveStore = useLeaveStore();
 const { leaveData } = storeToRefs(leaveStore);
 
 const approvedEmployees = computed(() => {
-  return leaveData.value.filter((leave) => leave.status === "approved");
+  return leaveData.value?.filter((leave) => leave.status === "approved");
 });
 
 function formatDate(isoString) {

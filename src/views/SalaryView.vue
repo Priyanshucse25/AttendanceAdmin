@@ -1,42 +1,41 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch } from "vue";
 import { usesalaryStore } from "@/stores/salaryStore";
 import { storeToRefs } from "pinia";
+import LottieAnimation from "@/components/LottieAnimation.vue";
 
 // store
 const salaryStore = usesalaryStore();
-const { salaryData } = storeToRefs(salaryStore);
+const { salaryData, loading, page_id, page_size } = storeToRefs(salaryStore);
 
-onMounted(() => {
-  salaryStore.getUserSalary();
+const searchName = ref("");
+const selectedDepartment = ref("");
+const selectedStatus = ref("");
+
+const filteredSalaries = computed(() => {
+  return salaryData.value.filter((emp) => {
+    const matchesName = emp.name
+      ?.toLowerCase()
+      .includes(searchName.value.toLowerCase());
+    const matchesDepartment = selectedDepartment.value
+      ? emp.department?.toLowerCase() ===
+        selectedDepartment.value.toLowerCase()
+      : true;
+    const matchesStatus = selectedStatus.value
+      ? emp.status?.toLowerCase() === selectedStatus.value.toLowerCase()
+      : true;
+
+    return matchesName && matchesDepartment && matchesStatus;
+  });
 });
 
-// Pagination setup
-const currentPage = ref(1);
-const itemsPerPage = 7;
-
-const totalPages = computed(() => {
-  return Math.ceil(salaryData.value.length / itemsPerPage);
-});
-
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  return salaryData.value.slice(start, end);
-});
-
-function goToPreviousPage() {
-  if (currentPage.value > 1) currentPage.value--;
-}
-
-function goToNextPage() {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-}
 
 // Leave and salary logic
 const calculateTotalLeaves = (emp) => {
   const halfDayLeaves = (Number(emp.halfDay) || 0) / 2;
-  return (Number(emp.leaves) || 0) + (Number(emp.sickLeaves) || 0) + halfDayLeaves;
+  return (
+    (Number(emp.leaves) || 0) + (Number(emp.sickLeaves) || 0) + halfDayLeaves
+  );
 };
 
 const calculateDeduction = (emp) => {
@@ -51,6 +50,18 @@ const calculatePayable = (emp) => {
   const deduction = calculateDeduction(emp);
   return Math.max(0, Number(emp.actualSalary) - deduction);
 };
+
+watch(page_id, () => {
+  salaryStore.getUserSalary(true);
+});
+
+const nextPage = () => {
+  page_id.value++;
+};
+
+const prevPage = () => {
+  if (page_id.value > 0) page_id.value--;
+};
 </script>
 
 <template>
@@ -62,160 +73,197 @@ const calculatePayable = (emp) => {
 
     <hr class="my-4" />
 
-    <div class="flex items-center gap-2 flex-wrap mb-4">
+    <div class="flex items-center gap-2">
       <input
+        v-model="searchName"
         type="text"
-        placeholder="Search by name, department"
+        placeholder="Search by employee"
         class="bg-black bg-opacity-10 px-4 py-1 rounded outline-none"
       />
 
-      <div class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4">
-        <p>Employee Id</p>
-        <i class="pi pi-angle-down"></i>
-      </div>
+      <select
+        v-model="selectedDepartment"
+        class="bg-black bg-opacity-10 px-2 py-1 rounded outline-none"
+      >
+        <option value="">All Departments</option>
+        <option value="HR">HR</option>
+        <option value="Engineering">Engineering</option>
+        <option value="Sales">Sales</option>
+      </select>
 
-      <div class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4">
-        <p>Department</p>
-        <i class="pi pi-angle-down"></i>
-      </div>
-
-      <div class="bg-black bg-opacity-10 px-2 py-1 rounded flex items-center gap-4">
-        <p>Status</p>
-        <i class="pi pi-angle-down"></i>
-      </div>
+      <select
+        v-model="selectedStatus"
+        class="bg-black bg-opacity-10 px-2 py-1 rounded outline-none"
+      >
+        <option value="">All Status</option>
+        <option value="paid">Paid</option>
+        <option value="unpaid">Unpaid</option>
+      </select>
     </div>
 
     <!-- TABLE -->
-    <div class="overflow-x-auto">
-      <table class="min-w-[1200px] w-full whitespace-nowrap text-sm">
-        <thead class="bg-gray-100 text-gray-700">
-          <tr>
-            <th class="text-left px-4 py-2 w-[20%] min-w-[280px]">Full Name & ID</th>
-            <th class="text-left px-4 py-2">Department</th>
-            <th class="text-left px-4 py-2">Type</th>
-            <th class="text-center px-4 py-2">Present</th>
-            <th class="text-center px-4 py-2">Paid Leaves</th>
-            <th class="text-center px-4 py-2">Leaves</th>
-            <th class="text-center px-4 py-2">Half Day</th>
-            <th class="text-center px-4 py-2">Sick Leaves</th>
-            <th class="text-left px-4 py-2">Add On</th>
-            <th class="text-left px-4 py-2">Actual Salary</th>
-            <th class="text-left px-4 py-2">Payable</th>
-            <th class="text-left px-4 py-2">Status</th>
-            <th class="text-right px-4 py-2">Action</th>
-          </tr>
-        </thead>
+    <template v-if="filteredSalaries && filteredSalaries.length > 0">
+      <div class="overflow-x-auto no-scrollbar mt-4">
+        <table class="min-w-[1200px] w-full whitespace-nowrap text-sm">
+          <thead class="bg-gray-100 text-gray-700">
+            <tr>
+              <th class="text-left px-4 py-2 w-[20%] min-w-[280px]">
+                Full Name & ID
+              </th>
+              <th class="text-left px-4 py-2">Department</th>
+              <th class="text-left px-4 py-2">Type</th>
+              <th class="text-center px-4 py-2">Present</th>
+              <th class="text-center px-4 py-2">Paid Leaves</th>
+              <th class="text-center px-4 py-2">Leaves</th>
+              <th class="text-center px-4 py-2">Half Day</th>
+              <th class="text-center px-4 py-2">Sick Leaves</th>
+              <th class="text-left px-4 py-2">Add On</th>
+              <th class="text-left px-4 py-2">Actual Salary</th>
+              <th class="text-left px-4 py-2">Payable</th>
+              <th class="text-left px-4 py-2">Status</th>
+              <th class="text-right px-4 py-2">Action</th>
+            </tr>
+          </thead>
 
-        <tbody>
-          <tr
-            v-for="emp in paginatedData"
-            :key="emp.id"
-            :class="['border-b', calculateTotalLeaves(emp) > 14 ? 'bg-red-50' : '']"
-          >
-            <td class="px-4 py-3">
-              <div class="flex items-center gap-3">
-                <img
-                  :src="emp.photo || 'https://i.pravatar.cc/40?img=1'"
-                  alt="avatar"
-                  class="w-8 h-8 rounded-full object-cover"
-                />
-                <div>
-                  <p class="font-medium">{{ emp.name }}</p>
-                  <p class="text-xs text-gray-400">{{ emp.empId }}</p>
+          <tbody>
+            <tr
+              v-for="emp in filteredSalaries"
+              :key="emp.id"
+              :class="[
+                'border-b',
+                calculateTotalLeaves(emp) > 14 ? 'bg-red-50' : '',
+              ]"
+            >
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <img
+                    :src="emp.photo || 'https://i.pravatar.cc/40?img=1'"
+                    alt="avatar"
+                    class="w-8 h-8 rounded-full object-cover"
+                  />
+                  <div>
+                    <p class="font-medium">{{ emp.name }}</p>
+                    <p class="text-xs text-gray-400">{{ emp.empId }}</p>
+                  </div>
                 </div>
-              </div>
-            </td>
-            <td class="px-4 py-3">{{ emp.department }}</td>
-            <td class="px-4 py-3">
-              <span class="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs">
-                {{ emp.type }}
-              </span>
-            </td>
-            <td class="text-center px-4 py-3">{{ emp.present }}</td>
-            <td class="text-center px-4 py-3">{{ emp.paidLeaves }}</td>
-            <td class="text-center px-4 py-3">{{ emp.leaves }}</td>
-            <td class="text-center px-4 py-3">
-              {{ emp.halfDay }} <span class="text-xs text-gray-400">({{ (emp.halfDay / 2).toFixed(1) }}d)</span>
-            </td>
-            <td class="text-center px-4 py-3">{{ emp.sickLeaves }}</td>
-            <td class="px-4 py-3">
-              <span
-                v-if="emp.addOn && emp.addOn !== '------'"
-                :class="[
-                  'px-2 py-1 rounded text-xs font-medium',
-                  emp.addOn.includes('Birthday')
-                    ? 'bg-pink-100 text-pink-600'
-                    : 'bg-purple-100 text-purple-600',
-                ]"
-              >
-                {{ emp.addOn }}
-              </span>
-              <span v-else class="text-gray-400 text-xs">------</span>
-            </td>
-            <td class="px-4 py-3">₹{{ emp.actualSalary }}</td>
-            <td class="px-4 py-3">
-              ₹{{ calculatePayable(emp) }}
-              <p class="text-xs text-red-500">
-                -₹{{ calculateDeduction(emp) }} deduction
-              </p>
-              <p class="text-xs text-gray-500">
-                {{ calculateTotalLeaves(emp) }} total leaves
-              </p>
-            </td>
-            <td class="px-4 py-3">
-              <span
-                :class="[
-                  'px-2 py-1 rounded text-xs font-medium',
-                  emp.status === 'Paid'
-                    ? 'bg-green-100 text-green-600'
-                    : 'bg-yellow-100 text-yellow-600',
-                ]"
-              >
-                {{ emp.status }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-right">
-              <button class="text-gray-500 hover:text-blue-600">✏️</button>
-              <button class="text-gray-500 hover:text-red-600 ml-2">🗑️</button>
-            </td>
-          </tr>
+              </td>
+              <td class="px-4 py-3">{{ emp.department }}</td>
+              <td class="px-4 py-3">
+                <span
+                  class="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs"
+                >
+                  {{ emp.type }}
+                </span>
+              </td>
+              <td class="text-center px-4 py-3">{{ emp.present }}</td>
+              <td class="text-center px-4 py-3">{{ emp.paidLeaves }}</td>
+              <td class="text-center px-4 py-3">{{ emp.leaves }}</td>
+              <td class="text-center px-4 py-3">
+                {{ emp.halfDay }}
+                <span class="text-xs text-gray-400"
+                  >({{ (emp.halfDay / 2).toFixed(1) }}d)</span
+                >
+              </td>
+              <td class="text-center px-4 py-3">{{ emp.sickLeaves }}</td>
+              <td class="px-4 py-3">
+                <span
+                  v-if="emp.addOn && emp.addOn !== '------'"
+                  :class="[
+                    'px-2 py-1 rounded text-xs font-medium',
+                    emp.addOn.includes('Birthday')
+                      ? 'bg-pink-100 text-pink-600'
+                      : 'bg-purple-100 text-purple-600',
+                  ]"
+                >
+                  {{ emp.addOn }}
+                </span>
+                <span v-else class="text-gray-400 text-xs">------</span>
+              </td>
+              <td class="px-4 py-3">₹{{ emp.actualSalary }}</td>
+              <td class="px-4 py-3">
+                ₹{{ calculatePayable(emp) }}
+                <p class="text-xs text-red-500">
+                  -₹{{ calculateDeduction(emp) }} deduction
+                </p>
+                <p class="text-xs text-gray-500">
+                  {{ calculateTotalLeaves(emp) }} total leaves
+                </p>
+              </td>
+              <td class="px-4 py-3">
+                <span
+                  :class="[
+                    'px-2 py-1 rounded text-xs font-medium',
+                    emp.status === 'Paid'
+                      ? 'bg-green-100 text-green-600'
+                      : 'bg-yellow-100 text-yellow-600',
+                  ]"
+                >
+                  {{ emp.status }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <button class="text-gray-500 hover:text-blue-600">✏️</button>
+                <button class="text-gray-500 hover:text-red-600 ml-2">
+                  🗑️
+                </button>
+              </td>
+            </tr>
 
-          <tr v-if="salaryData.length === 0">
-            <td colspan="13" class="text-center py-6 text-gray-400">
-              No salary data available.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            <tr v-if="salaryData.length === 0">
+              <td colspan="13" class="text-center py-6 text-gray-400">
+                No salary data available.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div
+        class="flex justify-center items-center my-4 gap-4 text-text sm-text"
+      >
+        <button
+          @click="prevPage"
+          :disabled="page_id === 1"
+          :class="{
+            'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-left': true,
+            'cursor-pointer': page_id > 1,
+            'cursor-not-allowed': page_id === 1
+          }"
+        ></button>
+
+        <p>Page {{ page_id }}</p>
+
+        <button
+          @click="nextPage"
+          :disabled="filteredSalaries.length < page_size"
+          :class="{
+            'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
+            'cursor-pointer': filteredSalaries.length >= page_size,
+            'cursor-not-allowed': filteredSalaries.length < page_size
+          }"
+        ></button>
+      </div>
+    </template>
+
+    <div v-if="loading" class="w-[350px] mx-auto mt-[100px]">
+      <LottieAnimation animationPath="/animation/loading.json" />
     </div>
 
-    <!-- Pagination Controls -->
-    <div class="flex justify-between items-center mt-2 text-sm pt-2">
-      <p>
-        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to
-        {{ Math.min(currentPage * itemsPerPage, salaryData.length) }} of
-        {{ salaryData.length }} employees
-      </p>
+    <!-- <div
+      v-if="!loading && filteredSalaries.length === 0"
+      class="w-[350px] mt-[200px] mx-auto"
+    >
+      <LottieAnimation animationPath="/animation/no-data.json" />
+      <p class="text-center font-bold">No matching results found</p>
+    </div> -->
 
-      <div class="flex items-center gap-3">
-        <button
-          @click="goToPreviousPage"
-          :disabled="currentPage === 1"
-          class="px-2 py-1 border rounded disabled:opacity-50"
-        >
-          <i class="pi pi-angle-left"></i>
-        </button>
-
-        <span>Page {{ currentPage }} of {{ totalPages }}</span>
-
-        <button
-          @click="goToNextPage"
-          :disabled="currentPage === totalPages"
-          class="px-2 py-1 border rounded disabled:opacity-50"
-        >
-          <i class="pi pi-angle-right"></i>
-        </button>
-      </div>
+    <div
+      v-if="!loading && !filteredSalaries.length"
+      class="w-[350px] mt-[200px] mx-auto"
+    >
+      <LottieAnimation animationPath="/animation/no-data.json" />
+      <p class="text-center font-bold">No Data Found</p>
     </div>
   </main>
 </template>

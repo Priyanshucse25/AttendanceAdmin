@@ -1,28 +1,37 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch } from "vue";
 import { useHomeStore } from "@/stores/homeStore";
 import { storeToRefs } from "pinia";
 
 const homeStore = useHomeStore();
-const { HomeData } = storeToRefs(homeStore);
+const { HomeData, page_id, page_size } = storeToRefs(homeStore);
 
-onMounted(() => {
-  homeStore.getUserHome();
-});
+const searchQuery = ref("");
+const filterDept = ref("");
+const filterStatus = ref("");
 
-const currentPage = ref(1);
-const itemsPerPage = 7;
+const filteredData = computed(() => {
+  return HomeData.value.filter((emp) => {
+    const matchesSearch =
+  emp.userName?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+  emp.userID?.toLowerCase().includes(searchQuery.value.toLowerCase());
 
-const totalPages = computed(() => {
-  return Math.ceil(HomeData.value.length / itemsPerPage);
+    const matchesDept =
+      !filterDept.value || emp.department === filterDept.value.toLowerCase();
+
+    const matchesStatus =
+      !filterStatus.value || getAttendanceStatus(emp) === filterStatus.value.toLowerCase();
+
+    return matchesSearch && matchesDept && matchesStatus;
+  });
 });
 
 const updateAttendence = async (id, status) => {
   try {
     await homeStore.updateAttendenceStatus(id, status);
-    
+
     // ✅ Update HomeData immediately after update
-    const index = HomeData.value.findIndex(emp => emp._id === id);
+    const index = HomeData.value.findIndex((emp) => emp._id === id);
     if (index !== -1) {
       HomeData.value[index].status = status;
     }
@@ -30,20 +39,6 @@ const updateAttendence = async (id, status) => {
     console.error("Error updating attendance status:", error);
   }
 };
-
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  return HomeData.value.slice(start, end);
-});
-
-function goToPreviousPage() {
-  if (currentPage.value > 1) currentPage.value--;
-}
-
-function goToNextPage() {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-}
 
 function getAttendanceStatus(employee) {
   if (!employee.timeStamp) return "Absent";
@@ -74,10 +69,22 @@ function closePhotoModal() {
   showPhotoModal.value = false;
   selectedPhoto.value = "";
 }
+
+watch(page_id, () => {
+  homeStore.getUserHome(true);
+});
+
+const nextPage = () => {
+  page_id.value++;
+};
+
+const prevPage = () => {
+  if (page_id.value > 0) page_id.value--;
+};
 </script>
 
 <template>
-  <main class="bg-white w-full rounded-md p-6 text-lg">
+  <main class="bg-white w-full rounded-md p-6">
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-xl font-semibold">This Month’s Attendance</h2>
@@ -87,29 +94,37 @@ function closePhotoModal() {
     </div>
 
     <!-- Filters -->
-    <div class="flex items-center gap-3 flex-wrap mb-6 text-sm">
+    <div class="flex items-center gap-2 text-md">
       <input
+        v-model="searchQuery"
         type="text"
-        placeholder="Search by name, department"
-        class="bg-black bg-opacity-10 px-4 py-2 rounded outline-none"
+        placeholder="Search by employee"
+        class="bg-black bg-opacity-10 px-4 py-1 rounded outline-none"
       />
-      <div class="bg-black bg-opacity-10 px-3 py-2 rounded flex items-center gap-2">
-        <p>Employee Id</p>
-        <i class="pi pi-angle-down"></i>
-      </div>
-      <div class="bg-black bg-opacity-10 px-3 py-2 rounded flex items-center gap-2">
-        <p>Department</p>
-        <i class="pi pi-angle-down"></i>
-      </div>
-      <div class="bg-black bg-opacity-10 px-3 py-2 rounded flex items-center gap-2">
-        <p>Status</p>
-        <i class="pi pi-angle-down"></i>
-      </div>
+
+      <select
+        v-model="filterDept"
+        class="bg-black bg-opacity-10 px-2 py-1 rounded outline-none"
+      >
+        <option value="">All Departments</option>
+        <option value="HR">HR</option>
+        <option value="Engineering">Engineering</option>
+        <option value="Sales">Sales</option>
+      </select>
+
+      <select
+        v-model="filterStatus"
+        class="bg-black bg-opacity-10 px-2 py-1 rounded outline-none"
+      >
+        <option value="">All Status</option>
+        <option value="Present">Present</option>
+        <option value="Absent">Absent</option>
+      </select>
     </div>
 
     <!-- Table -->
-    <div class="w-full">
-      <table class="w-full table-auto text-left -mt-5 border-collapse text-sm">
+    <div class="w-full mt-4">
+      <table class="w-full table-auto text-left border-collapse text-sm">
         <thead class="bg-custom-gray text-black">
           <tr>
             <th class="py-3 px-4">Full Name & ID</th>
@@ -122,7 +137,7 @@ function closePhotoModal() {
         </thead>
         <tbody class="text-black">
           <tr
-            v-for="employee in paginatedData"
+            v-for="employee in filteredData"
             :key="employee.id"
             class="border-b border-gray-200"
           >
@@ -136,19 +151,26 @@ function closePhotoModal() {
             <!-- View Photo Trigger -->
             <td
               class="py-3 px-4 text-blue-600 underline cursor-pointer"
-              @click="openPhotoModal(employee.image)"
+              @click="openPhotoModal(employee.selfieImage)"
             >
               View
             </td>
 
-            <td class="py-3 px-4">{{ formatTime(employee.punchIn) }}</td>
+            <td class="py-3 px-4">
+              {{ formatTime(employee.punchIn) || "--" }} to
+              {{ formatTime(employee.punchOut) || "--" }}
+            </td>
 
             <!-- Action Buttons -->
             <td class="py-3 px-4 space-x-2">
               <button
                 @click="updateAttendence(employee._id, 'present')"
                 class="px-3 py-1 rounded font-medium text-sm"
-                :class="[employee.status === 'present' ? 'bg-green-600 bg-opacity-30 text-green-600' : 'bg-gray-200 text-gray-700 hover:bg-green-100']"
+                :class="[
+                  employee.status === 'present'
+                    ? 'bg-green-600 bg-opacity-30 text-green-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-green-100',
+                ]"
               >
                 Present
               </button>
@@ -156,7 +178,11 @@ function closePhotoModal() {
               <button
                 @click="updateAttendence(employee._id, 'absent')"
                 class="px-3 py-1 rounded font-medium text-sm"
-                :class="[employee.status === 'absent' ? 'bg-red-600 bg-opacity-30 text-red-600' : 'bg-gray-200 text-gray-700 hover:bg-red-100']"
+                :class="[
+                  employee.status === 'absent'
+                    ? 'bg-red-600 bg-opacity-30 text-red-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-red-100',
+                ]"
               >
                 Absent
               </button>
@@ -164,7 +190,11 @@ function closePhotoModal() {
               <button
                 @click="updateAttendence(employee._id, 'halfday')"
                 class="px-3 py-1 rounded font-medium text-sm"
-                :class="[employee.status === 'halfday' ? 'bg-yellow-500 bg-opacity-30 text-yellow-600' : 'bg-gray-200 text-gray-700 hover:bg-yellow-100']"
+                :class="[
+                  employee.status === 'halfday'
+                    ? 'bg-yellow-500 bg-opacity-30 text-yellow-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-yellow-100',
+                ]"
               >
                 Half Day
               </button>
@@ -174,29 +204,30 @@ function closePhotoModal() {
       </table>
 
       <!-- Pagination -->
-      <div class="flex justify-between items-center text-base pt-4 pb-5">
-        <p>
-          Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to
-          {{ Math.min(currentPage * itemsPerPage, HomeData.length) }} of
-          {{ HomeData.length }} employees
-        </p>
-        <div class="flex items-center gap-5">
-          <button
-            @click="goToPreviousPage"
-            :disabled="currentPage === 1"
-            class="px-4 py-2 border rounded disabled:opacity-50"
-          >
-            <i class="pi pi-angle-left"></i>
-          </button>
-          <span>Page {{ currentPage }} of {{ totalPages }}</span>
-          <button
-            @click="goToNextPage"
-            :disabled="currentPage === totalPages"
-            class="px-4 py-2 border rounded disabled:opacity-50"
-          >
-            <i class="pi pi-angle-right"></i>
-          </button>
-        </div>
+      <div
+        class="flex justify-center items-center my-4 gap-4 text-text sm-text"
+      >
+        <button
+          @click="prevPage"
+          :disabled="page_id === 1"
+          :class="{
+            'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-left': true,
+            'cursor-pointer': page_id > 1,
+            'cursor-not-allowed': page_id === 1
+          }"
+        ></button>
+
+        <p>Page {{ page_id }}</p>
+
+        <button
+          @click="nextPage"
+          :disabled="filteredData.length < page_size"
+          :class="{
+            'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
+            'cursor-pointer': filteredData.length >= page_size,
+            'cursor-not-allowed': filteredData.length < page_size
+          }"
+        ></button>
       </div>
     </div>
   </main>
@@ -213,6 +244,7 @@ function closePhotoModal() {
       >
         ✕
       </button>
+      {{}}
       <h3 class="text-lg font-semibold mb-4">Employee Photo</h3>
       <img
         :src="selectedPhoto"

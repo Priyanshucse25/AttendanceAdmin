@@ -24,7 +24,19 @@ const router = createRouter({
           name: "home",
           component: HomeView,
         },
+      ],
+    },
+    {
+      path: "/",
+      name: "",
+      component: NoSidebarLayout,
+      children: [
         {
+          path: "/profile",
+          name: "profile",
+          component: ProfileView,
+        },
+                {
           path: "/employee",
           name: "employee",
           component: EmployeeView,
@@ -38,18 +50,6 @@ const router = createRouter({
           path: "/leave",
           name: "leave",
           component: LeaveView,
-        },
-      ],
-    },
-    {
-      path: "/",
-      name: "",
-      component: NoSidebarLayout,
-      children: [
-        {
-          path: "/profile",
-          name: "profile",
-          component: ProfileView,
         },
       ]
     },
