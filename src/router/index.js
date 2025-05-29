@@ -74,8 +74,8 @@ const router = createRouter({
       
     },
      {
-          path: "/OtpVerify",
-          name: "OtpVerify",
+          path: "/otp-verify",
+          name: "otp-verify",
           component: OtpVerify,
         },
   ],

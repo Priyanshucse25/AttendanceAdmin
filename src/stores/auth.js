@@ -10,13 +10,14 @@ export const useAuthStore = defineStore('auth', {
   }),
   actions: {
     async loginAdmin(payload) {
-      const res = await axios.post('http://192.168.1.8:8000/admin/login', payload)
+      const res = await axios.post('https://attendancebackends.onrender.com/admin/login', payload)
       const token = res.data.token
       localStorage.setItem('token', `Bearer ${token}`)
       this.token = token
+      return res
     },
     async signupAdmin(payload) {
-      const res = await axios.post('http://192.168.1.8:8000/admin/signup', payload)
+      const res = await axios.post('https://attendancebackends.onrender.com/admin/signup', payload)
       return res.data.message
     },
     logout() {

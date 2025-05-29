@@ -72,9 +72,9 @@ const signup = async () => {
       teamSize: teamSize.value,
     };
 
-    const { data } = await axios.post("http://192.168.1.8:8000/admin/signup", payload);
+    const response = await axios.post("https://attendancebackends.onrender.com/admin/signup", payload);
 
-    if (data.success) {
+    if (response.data) {
       // Navigate to OTP verification page immediately
       router.push("/otp-verify");
     } else {

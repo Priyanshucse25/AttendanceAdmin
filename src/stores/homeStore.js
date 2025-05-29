@@ -8,21 +8,30 @@ export const useHomeStore = defineStore("home", () => {
   const page = ref(1)
   const limit = ref(10)
   const loading = ref(false)
+  const totalPages = ref("")
 
-  const getUserHome = async () => {
+  const getUserHome = async (filters = {}) => {
     try {
       loading.value = true;
+
+      const queryParams = {
+        page: page.value,
+        limit: limit.value,
+        ...filters, // Spread searchName, department, status
+      };
+
       const response = await makeRequest(
         endpoint,
         "GET",
         {},
         {},
-        {page : page.value, limit: limit.value},
+        queryParams,
         0,
         null,
         "/userdata"
       );
       HomeData.value = response?.punchDetails;
+      totalPages.value = response?.totalPages
     } catch (error) {
       console.error("Error in Home", error);
     }finally{
@@ -48,6 +57,7 @@ export const useHomeStore = defineStore("home", () => {
     updateAttendenceStatus, 
     page,
     limit,
-    loading
+    loading,
+    totalPages
   };
 });
