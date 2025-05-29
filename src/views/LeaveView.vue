@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { useLeaveStore } from "@/stores/leaveStore";
 import { storeToRefs } from "pinia";
+import { debounce } from "@/utils/debounce";
 import LottieAnimation from "@/components/LottieAnimation.vue";
 
 const leaveStore = useLeaveStore();
@@ -19,23 +20,6 @@ function getLeaveDuration(from, to) {
   return diffDays > 0 ? diffDays : 0;
 }
 
-const filteredLeaves = computed(() => {
-  return [...leaveData.value]
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // recent first
-    .filter((leave) => {
-      const matchesName = leave.name
-        .toLowerCase()
-        .includes(searchName.value.toLowerCase());
-      const matchesDepartment = selectedDepartment.value
-        ? leave.department?.toLowerCase() === selectedDepartment.value.toLowerCase()
-        : true;
-      const matchesStatus = selectedStatus.value
-        ? leave.status?.toLowerCase() === selectedStatus.value.toLowerCase()
-        : true;
-      return matchesName && matchesDepartment && matchesStatus;
-    });
-});
-
 function formatDate(isoString) {
   if (!isoString) return "";
   const date = new Date(isoString);
@@ -51,8 +35,28 @@ const updateLeave = async (id, statusType) => {
   }
 };
 
+const fetchUserLeaves = () => {
+  leaveStore.getUserLeaves({
+    search: searchName.value,
+    department: selectedDepartment.value,
+    status: selectedStatus.value,
+    page: page.value,
+    limit: limit.value,
+  });
+};
+
+const debouncedFetchSalaries = debounce(fetchUserLeaves, 500);
+
+watch(
+  [searchName, selectedDepartment, selectedStatus],
+  () => {
+    page.value = 1;
+    debouncedFetchSalaries();
+  }
+);
+
 watch(page, () => {
-  leaveStore.getUserLeaves(true);
+  fetchUserLeaves(); // no debounce here
 });
 
 const nextPage = () => {
@@ -68,7 +72,7 @@ const prevPage = () => {
   <main class="bg-white w-full rounded-md p-4 overflow-y-auto">
     <div class="flex items-center justify-between">
       <h2 class="font-bold text-[20px]">Leave List</h2>
-      <button>Download</button>
+      <!-- <button>Download</button> -->
     </div>
 
     <hr class="my-4" />
@@ -102,7 +106,7 @@ const prevPage = () => {
       </select>
     </div>
 
-    <template v-if="filteredLeaves && filteredLeaves.length > 0">
+    <template v-if="leaveData && leaveData.length > 0">
       <div class="mt-4 w-full overflow-auto no-scrollbar">
         <table class="min-w-[1200px] w-full table-auto text-left border-collapse">
           <thead class="bg-gray-100 text-gray-500 text-sm whitespace-nowrap">
@@ -123,14 +127,14 @@ const prevPage = () => {
           </thead>
           <tbody class="text-sm text-gray-700 whitespace-nowrap">
             <tr
-              v-for="(employee, index) in filteredLeaves"
+              v-for="(employee, index) in leaveData"
               :key="employee._id"
               class="border-b border-gray-200"
             >
               <td class="py-3 px-4">{{ index + 1 }}</td>
               <td class="py-3 px-4 flex items-center gap-3">
                 <img
-                  :src="employee.photo"
+                  :src="employee.image"
                   class="w-8 h-8 rounded-full object-cover"
                   alt="avatar"
                 />
@@ -142,7 +146,7 @@ const prevPage = () => {
               <td class="py-3 px-4">
                 {{
                   employee.status === "approved"
-                    ? 14 - getLeaveDuration(employee.from, employee.to)
+                    ? 14 - employee.leaveTaken
                     : 14
                 }}
               </td>
@@ -154,6 +158,7 @@ const prevPage = () => {
               <td class="py-3 px-4">
                 <p class="bg-blue-100 text-blue-500 font-semibold px-1 py-1 rounded-md text-center">
                   {{ getLeaveDuration(employee.from, employee.to) }}
+                    <!-- {{ employee.leaveDays }} -->
                 </p>
               </td>
               <td class="py-3 px-4">
@@ -208,11 +213,11 @@ const prevPage = () => {
 
         <button
           @click="nextPage"
-          :disabled="filteredLeaves.length < limit"
+          :disabled="leaveData.length < limit"
           :class="{
             'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
-            'cursor-pointer': filteredLeaves.length >= limit,
-            'cursor-not-allowed': filteredLeaves.length < limit
+            'cursor-pointer': leaveData.length >= limit,
+            'cursor-not-allowed': leaveData.length < limit
           }"
         ></button>
       </div>
@@ -222,10 +227,10 @@ const prevPage = () => {
       <LottieAnimation animationPath="/animation/loading.json" />
     </div>
 
-    <div v-if="!loading && filteredLeaves.length === 0" class="w-[350px] mt-[200px] mx-auto">
+    <!-- <div v-if="!loading && leaveData.length === 0" class="w-[350px] mt-[200px] mx-auto">
       <LottieAnimation animationPath="/animation/no-data.json" />
       <p class="text-center font-bold">No matching results found</p>
-    </div>
+    </div> -->
 
     <div v-if="!loading && !leaveData.length" class="w-[350px] mt-[200px] mx-auto">
       <LottieAnimation animationPath="/animation/no-data.json" />

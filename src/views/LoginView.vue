@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth.js";
-import { toast } from "vue3-toastify";
+// import { toast } from "vue3-toastify";
 import LottieAnimation from "@/components/LottieAnimation.vue";
 
 const email = ref("");
@@ -22,9 +22,10 @@ const login = async () => {
   try {
     requested.value = true;
     error.value = "";
-    await auth.loginAdmin({ email: email.value, password: password.value });
+    const response = await auth.loginAdmin({ email: email.value, password: password.value });
+    console.log(response)
+    // toast.success("Logged in successfully");
     router.push("/");
-    toast.success("Logged out successfully");
   } catch (err) {
     error.value = err.response?.data?.message || "Login failed.";
   }finally{
