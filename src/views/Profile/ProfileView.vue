@@ -6,6 +6,7 @@ import PunchSection from "./PunchSection.vue";
 import LeaveSection from "./LeaveSection.vue";
 import DocumentSection from "./DocumentSection.vue";
 import WeekendSection from "./WeekendSection.vue";
+import HolidaySection from "./HolidaySection.vue";
 import { storeToRefs } from "pinia";
 
 const profileStore = useProfileStore();
@@ -75,7 +76,7 @@ const submitCompanyDetails = async () => {
 </script>
 
 <template>
-  <main class="bg-white w-full h-full rounded-md p-4">
+  <main class="bg-white w-full rounded-md p-4">
     <!-- Header -->
     <div>
       <form
@@ -212,6 +213,7 @@ const submitCompanyDetails = async () => {
       <LeaveSection v-if="activeTab === 'leaves'" />
       <DocumentSection v-if="activeTab === 'documents'" />
       <WeekendSection v-if="activeTab === 'weekends'" />
+      <HolidaySection v-if="activeTab === 'holidays'"/>
       <!-- Other tab sections can go here -->
     </div>
   </main>

@@ -52,24 +52,16 @@ const verifyOtp = async () => {
 
   try {
     requested.value = true;
-    const { data } = await axios.post("http://192.168.1.8:8000/admin/verify_signup", {
+    const response = await axios.post("https://attendancebackends.onrender.com/admin/verify_signup", {
       email: email.value,
       otp: otp.value,
     });
 
-    if (data.verified) {
-      const msg = await auth.signupAdmin({
-        name: name.value,
-        email: email.value,
-        password: password.value,
-        organisation: organisation.value,
-        industry: industry.value,
-        teamSize: teamSize.value,
-      });
-
-      message.value = msg || "Signup successful!";
+    if (response.data) {
+      message.value = response.data?.message || "Signup successful!";
       localStorage.setItem("userEmail", email.value);
       localStorage.getItem("userEmail" , email.value);
+      localStorage.setItem('token', `Bearer ${response.data?.token}`)
       
       // Clear temporary signup data
       localStorage.removeItem("signupEmail");
@@ -79,7 +71,7 @@ const verifyOtp = async () => {
       localStorage.removeItem("signupIndustry");
       localStorage.removeItem("signupTeamSize");
       
-      setTimeout(() => router.push("/"), 1500);
+      setTimeout(() => router.push("/"), 800);
     } else {
       error.value = "Invalid OTP.";
     }

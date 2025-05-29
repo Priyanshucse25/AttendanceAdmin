@@ -37,19 +37,45 @@ function populateForm(item) {
   lunchTo.value = item.lunchTime?.to || '';
 }
 
-// Submit form
-const submitChanges = async () => {
-  if (!selectedShift.value) return;
+function timeStringToDate(timeStr) {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  const now = new Date();
+  now.setHours(hours);
+  now.setMinutes(minutes);
+  now.setSeconds(0);
+  now.setMilliseconds(0);
+  return now;
+}
 
-  const updatedData = {
-    _id: selectedShift.value._id,
-    shiftTime: { from: shiftFrom.value, to: shiftTo.value },
-    bufferTime: { from: bufferFrom.value, to: bufferTo.value },
-    lunchTime: { from: lunchFrom.value, to: lunchTo.value },
-    breaks: breakFrom.value && breakTo.value ? [{ from: breakFrom.value, to: breakTo.value }] : []
+const submitChanges = async () => {
+  const hasId = !!selectedShift.value?._id;
+
+  const data = {
+    shiftTime: {
+      from: timeStringToDate(shiftFrom.value),
+      to: timeStringToDate(shiftTo.value),
+    },
+    bufferTime: {
+      from: timeStringToDate(bufferFrom.value),
+      to: timeStringToDate(bufferTo.value),
+    },
+    lunchTime: {
+      from: timeStringToDate(lunchFrom.value),
+      to: timeStringToDate(lunchTo.value),
+    },
+    breaks: (breakFrom.value && breakTo.value)
+      ? [{ from: timeStringToDate(breakFrom.value), to: timeStringToDate(breakTo.value) }]
+      : [],
   };
 
-  await profileStore.editPunchInDetails(updatedData);
+  if (hasId) data._id = selectedShift.value._id;
+
+  if (hasId) {
+    await profileStore.editPunchInDetails(data);
+  } else {
+    await profileStore.addPunchInDetails(data);
+  }
+
   isEditing.value = false;
 };
 </script>
@@ -109,8 +135,8 @@ const submitChanges = async () => {
 
     <!-- Break Inputs -->
     <div v-if="showBreak" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <input type="time" placeholder="Break Log In" class="input-field" />
-      <input type="time" placeholder="Break Log Out" class="input-field" />
+      <input type="time" v-model="breakFrom" placeholder="Break Log In" class="input-field" />
+      <input type="time" v-model="breakTo" placeholder="Break Log Out" class="input-field" />
     </div>
 
     <!-- Submit Button -->

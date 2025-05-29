@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
-import { toast } from 'vue3-toastify'
+// import { toast } from 'vue3-toastify'
 
 const authStore = useAuthStore()
 
@@ -28,14 +28,19 @@ const menu = [
 ];
 
 const isMenuopen = ref(false)
+const sidebarOpen = ref(false);
 
 const toggleMenu = () => {
   isMenuopen.value = !isMenuopen.value
 }
 
+const toggleSidebar = () => {
+  sidebarOpen.value = !sidebarOpen.value;
+};
+
 const handleLogout = async () => {
   await authStore.logout()
-  toast.success("Logged out successfully")
+  // toast.success("Logged out successfully")
 };
 </script>
 
@@ -43,10 +48,13 @@ const handleLogout = async () => {
   <nav
     class="flex items-center px-4 mx-4 rounded-md justify-between h-[60px] bg-white"
   >
-    <router-link to="/" class="flex items-center gap-2">
-      <img src="/svg/logo.svg" alt="Logo" class="w-[90%]" />
-    </router-link>
-    <div class="flex justify-center items-center gap-8">
+    <div class="flex items-center gap-4">
+      <div class="md:hidden"><button @click="toggleSidebar" class="pi pi-bars text-[20px]"></button></div>
+      <router-link to="/" class="flex items-center gap-2">
+        <img src="/svg/logo.svg" alt="Logo" class="w-[80%] md:w-[90%]" />
+      </router-link>
+    </div>
+    <div class="hidden md:flex justify-center items-center gap-8">
       <router-link
         v-for="item in menu"
         :to="item.path"
@@ -71,6 +79,7 @@ const handleLogout = async () => {
             class="w-[200px] bg-white shadow-md absolute top-[50px] right-5 rounded-md z-30 flex flex-col"
           >
             <router-link
+            @click="toggleMenu"
               to="/profile"
               class="py-2 px-4 hover:bg-slate-300 w-full rounded-md transition-all"
               >Profile</router-link
@@ -91,6 +100,38 @@ const handleLogout = async () => {
         </transition>
       </div>
     </div>
+
+
+    <transition name="slide-left">
+    <aside
+      v-if="sidebarOpen"
+      class="fixed top-0 left-0 h-full w-64 bg-white shadow-md z-40 flex flex-col p-4"
+    >
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-lg font-semibold">Menu</h2>
+        <button @click="toggleSidebar" class="pi pi-times text-lg"></button>
+      </div>
+      <nav class="flex flex-col gap-3">
+        <router-link
+          v-for="item in menu"
+          :key="item.path"
+          :to="item.path"
+          class="py-2 px-3 rounded-md hover:bg-indigo-100 transition"
+          :class="{ 'bg-indigo-200': item.path === route.path }"
+          @click="toggleSidebar"
+        >
+          {{ item.name }}
+        </router-link>
+      </nav>
+    </aside>
+  </transition>
+
+  <!-- Overlay when sidebar is open -->
+  <div
+    v-if="sidebarOpen"
+    class="fixed inset-0 bg-black bg-opacity-30 z-30"
+    @click="toggleSidebar"
+  ></div>
   </nav>
 </template>
 
@@ -111,5 +152,20 @@ const handleLogout = async () => {
 .menu-fade-leave-from {
   opacity: 1;
   transform: scale(1);
+}
+
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.slide-left-enter-from,
+.slide-left-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+.slide-left-enter-to,
+.slide-left-leave-from {
+  transform: translateX(0%);
+  opacity: 1;
 }
 </style>

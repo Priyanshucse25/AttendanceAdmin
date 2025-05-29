@@ -11,10 +11,17 @@ export const useEmployeeStore = defineStore("employee", () => {
   const limit = ref(10)
   const totalPages = ref("")
 
-  const getallEmployees = async () => {
+  const getallEmployees = async (filters = {}) => {
     loading.value = true;
+
+    const queryParams = {
+        page: page.value,
+        limit: limit.value,
+        ...filters, // Spread searchName, department, status
+      };
+
     try {
-      const response = await makeRequest("/user", "GET", {}, {}, {page : page.value, limit: limit.value}, 0, null, "/admin/allusers/all");
+      const response = await makeRequest("/user", "GET", {}, {}, queryParams, 0, null, "/admin/allusers/all");
       allEmployeeData.value = response?.users;
       totalPages.value = response?.totalPages
     } catch (error) {

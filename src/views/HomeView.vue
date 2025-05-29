@@ -2,29 +2,15 @@
 import { ref, computed, watch } from "vue";
 import { useHomeStore } from "@/stores/homeStore";
 import { storeToRefs } from "pinia";
+import { debounce } from "@/utils/debounce";
+import LottieAnimation from "@/components/LottieAnimation.vue";
 
 const homeStore = useHomeStore();
-const { HomeData, page, limit } = storeToRefs(homeStore);
+const { HomeData, page, limit, totalPages, loading } = storeToRefs(homeStore);
 
 const searchQuery = ref("");
 const filterDept = ref("");
 const filterStatus = ref("");
-
-const filteredData = computed(() => {
-  return HomeData.value.filter((emp) => {
-    const matchesSearch =
-  emp.userName?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-  emp.userID?.toLowerCase().includes(searchQuery.value.toLowerCase());
-
-    const matchesDept =
-      !filterDept.value || emp.department === filterDept.value.toLowerCase();
-
-    const matchesStatus =
-      !filterStatus.value || getAttendanceStatus(emp) === filterStatus.value.toLowerCase();
-
-    return matchesSearch && matchesDept && matchesStatus;
-  });
-});
 
 const updateAttendence = async (id, status) => {
   try {
@@ -70,9 +56,28 @@ function closePhotoModal() {
   selectedPhoto.value = "";
 }
 
-watch(page, () => {
-  homeStore.getUserHome(true);
+const fetchHomeData = () => {
+  homeStore.getUserHome({
+    search: searchQuery.value,
+    department: filterDept.value,
+    status: filterStatus.value,
+    page: page.value,
+    limit: limit.value,
+  });
+};
+
+const debouncedFetchHomeData = debounce(fetchHomeData, 500);
+
+watch([searchQuery, filterDept, filterStatus], () => {
+  page.value = 1;
+  debouncedFetchHomeData();
 });
+
+
+watch(page, () => {
+  fetchHomeData(); // no debounce here
+});
+
 
 const nextPage = () => {
   page.value++;
@@ -87,10 +92,10 @@ const prevPage = () => {
   <main class="bg-white w-full rounded-md p-6 overflow-y-auto">
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl font-semibold">This Month’s Attendance</h2>
-      <button class="bg-white border px-5 py-2 rounded shadow text-sm">
+      <h2 class="text-xl font-semibold">Today's Attendance</h2>
+      <!-- <button class="bg-white border px-5 py-2 rounded shadow text-sm">
         Download
-      </button>
+      </button> -->
     </div>
 
     <!-- Filters -->
@@ -123,112 +128,126 @@ const prevPage = () => {
     </div>
 
     <!-- Table -->
-    <div class="w-full mt-4">
-      <table class="w-full table-auto text-left border-collapse text-sm">
-        <thead class="bg-custom-gray text-black">
-          <tr>
-            <th class="py-3 px-4">Full Name & ID</th>
-            <th class="py-3 px-4">Department</th>
-            <th class="py-3 px-4">Location</th>
-            <th class="py-3 px-4">Photo</th>
-            <th class="py-3 px-4">Punch In & Out Time</th>
-            <th class="py-3 px-4">Action</th>
-          </tr>
-        </thead>
-        <tbody class="text-black">
-          <tr
-            v-for="employee in filteredData"
-            :key="employee.id"
-            class="border-b border-gray-200"
-          >
-            <td class="py-3 px-4">
-              <p class="font-medium">{{ employee.userName }}</p>
-              <p class="text-xs text-gray-500">{{ employee.userID }}</p>
-            </td>
-            <td class="py-3 px-4">{{ employee.department }}</td>
-            <td class="py-3 px-4">{{ employee.locationName }}</td>
-
-            <!-- View Photo Trigger -->
-            <td
-              class="py-3 px-4 text-blue-600 underline cursor-pointer"
-              @click="openPhotoModal(employee.selfieImage)"
+    <template v-if="HomeData && HomeData.length > 0">
+      <div class="overflow-x-auto no-scrollbar mt-4">
+        <table class="min-w-[1000px] w-full whitespace-nowrap text-sm">
+          <thead class="bg-custom-gray text-left text-black">
+            <tr>
+              <th class="py-3 px-4">Full Name & ID</th>
+              <th class="py-3 px-4">Department</th>
+              <th class="py-3 px-4">Location</th>
+              <th class="py-3 px-4">Photo</th>
+              <th class="py-3 px-4">Punch In & Out Time</th>
+              <th class="py-3 px-4">Action</th>
+            </tr>
+          </thead>
+          <tbody class="text-black">
+            <tr
+              v-for="employee in HomeData"
+              :key="employee.id"
+              class="border-b border-gray-200"
             >
-              View
-            </td>
+              <td class="py-3 px-4">
+                <p class="font-medium">{{ employee.userName }}</p>
+                <p class="text-xs text-gray-500">{{ employee.userID }}</p>
+              </td>
+              <td class="py-3 px-4">{{ employee.department }}</td>
+              <td class="py-3 px-4">{{ employee.locationName }}</td>
 
-            <td class="py-3 px-4">
-              {{ formatTime(employee.punchIn) || "--" }} to
-              {{ formatTime(employee.punchOut) || "--" }}
-            </td>
-
-            <!-- Action Buttons -->
-            <td class="py-3 px-4 space-x-2">
-              <button
-                @click="updateAttendence(employee._id, 'present')"
-                class="px-3 py-1 rounded font-medium text-sm"
-                :class="[
-                  employee.status === 'present'
-                    ? 'bg-green-600 bg-opacity-30 text-green-600'
-                    : 'bg-gray-200 text-gray-700 hover:bg-green-100',
-                ]"
+              <!-- View Photo Trigger -->
+              <td
+                class="py-3 px-4 text-blue-600 underline cursor-pointer"
+                @click="openPhotoModal(employee.selfieImage)"
               >
-                Present
-              </button>
+                View
+              </td>
 
-              <button
-                @click="updateAttendence(employee._id, 'absent')"
-                class="px-3 py-1 rounded font-medium text-sm"
-                :class="[
-                  employee.status === 'absent'
-                    ? 'bg-red-600 bg-opacity-30 text-red-600'
-                    : 'bg-gray-200 text-gray-700 hover:bg-red-100',
-                ]"
-              >
-                Absent
-              </button>
+              <td class="py-3 px-4">
+                {{ formatTime(employee.punchIn) || "--" }} to
+                {{ formatTime(employee.punchOut) || "--" }}
+              </td>
 
-              <button
-                @click="updateAttendence(employee._id, 'halfday')"
-                class="px-3 py-1 rounded font-medium text-sm"
-                :class="[
-                  employee.status === 'halfday'
-                    ? 'bg-yellow-500 bg-opacity-30 text-yellow-600'
-                    : 'bg-gray-200 text-gray-700 hover:bg-yellow-100',
-                ]"
-              >
-                Half Day
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <!-- Action Buttons -->
+              <td class="py-3 px-4 space-x-2">
+                <button
+                  @click="updateAttendence(employee._id, 'present')"
+                  class="px-3 py-1 rounded font-medium text-sm"
+                  :class="[
+                    employee.status === 'present'
+                      ? 'bg-green-600 bg-opacity-30 text-green-600'
+                      : 'bg-gray-200 text-gray-700 hover:bg-green-100',
+                  ]"
+                >
+                  Present
+                </button>
 
-      <!-- Pagination -->
-      <div
-        class="flex justify-center items-center my-4 gap-4 text-text sm-text"
-      >
-        <button
-          @click="prevPage"
-          :disabled="page === 1"
-          :class="{
-            'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-left': true,
-            'cursor-pointer': page > 1,
-            'cursor-not-allowed': page === 1
-          }"
-        ></button>
+                <button
+                  @click="updateAttendence(employee._id, 'absent')"
+                  class="px-3 py-1 rounded font-medium text-sm"
+                  :class="[
+                    employee.status === 'absent'
+                      ? 'bg-red-600 bg-opacity-30 text-red-600'
+                      : 'bg-gray-200 text-gray-700 hover:bg-red-100',
+                  ]"
+                >
+                  Absent
+                </button>
 
-        <p>Page {{ page }}</p>
+                <button
+                  @click="updateAttendence(employee._id, 'halfday')"
+                  class="px-3 py-1 rounded font-medium text-sm"
+                  :class="[
+                    employee.status === 'halfday'
+                      ? 'bg-yellow-500 bg-opacity-30 text-yellow-600'
+                      : 'bg-gray-200 text-gray-700 hover:bg-yellow-100',
+                  ]"
+                >
+                  Half Day
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-        <button
-          @click="nextPage"
-          :disabled="filteredData.length < limit"
-          :class="{
-            'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
-            'cursor-pointer': filteredData.length >= limit,
-            'cursor-not-allowed': filteredData.length < limit
-          }"
-        ></button>
+        <!-- Pagination -->
+        <div
+          class="flex justify-center items-center my-4 gap-4 text-text sm-text"
+        >
+          <button
+            @click="prevPage"
+            :disabled="page === 1"
+            :class="{
+              'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-left': true,
+              'cursor-pointer': page > 1,
+              'cursor-not-allowed': page === 1,
+            }"
+          ></button>
+
+          <p>Page {{ page }} of {{ totalPages }}</p>
+
+          <button
+            @click="nextPage"
+            :disabled="HomeData.length <= limit"
+            :class="{
+              'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
+              'cursor-pointer': HomeData.length >= limit,
+              'cursor-not-allowed': HomeData.length <= limit,
+            }"
+          ></button>
+        </div>
       </div>
+    </template>
+
+    <div v-if="loading" class="w-[350px] mx-auto mt-[100px]">
+      <LottieAnimation animationPath="/animation/loading.json" />
+    </div>
+
+    <div
+      v-if="!loading && !HomeData.length"
+      class="w-[350px] mt-[200px] mx-auto"
+    >
+      <LottieAnimation animationPath="/animation/no-data.json" />
+      <p class="text-center font-bold">No Data Found</p>
     </div>
   </main>
 
@@ -244,7 +263,7 @@ const prevPage = () => {
       >
         ✕
       </button>
-      {{}}
+
       <h3 class="text-lg font-semibold mb-4">Employee Photo</h3>
       <img
         :src="selectedPhoto"

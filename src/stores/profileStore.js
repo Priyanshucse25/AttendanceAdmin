@@ -51,9 +51,19 @@ export const useProfileStore = defineStore("profile", () => {
         }
     }
 
-    const editPunchInDetails = async(form) => {
+    const addPunchInDetails = async(form) => {
         try {
             const response = await makeRequest(endpoint, "POST", {form}, {}, {}, 0, null, "/punchdetails")
+            return response
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+
+    const editPunchInDetails = async(form) => {
+        try {
+            const response = await makeRequest(endpoint, "PUT", {form}, {}, {}, 0, null, "/punchdetails")
             return response
         } catch (error) {
             console.error(error)
@@ -72,6 +82,16 @@ export const useProfileStore = defineStore("profile", () => {
     const getWeekendDetails = async() => {
         try {
             const response = await makeRequest(endpoint, "GET", {}, {}, {}, 0, null, "/weekend")
+            weekendDetails.value = response.data
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+
+    const postWeekendDetails = async(form) => {
+        try {
+            const response = await makeRequest(endpoint, "POST", {form}, {}, {}, 0, null, "/weekend")
             weekendDetails.value = response
         } catch (error) {
             console.error(error)
@@ -110,8 +130,8 @@ export const useProfileStore = defineStore("profile", () => {
 
     getCompanyDetails()
     getPunchInDetails()
-    getHolidayDetails()
     getWeekendDetails()
+    getHolidayDetails()
     getCompanyDocument()
 
     return{
@@ -121,9 +141,11 @@ export const useProfileStore = defineStore("profile", () => {
         addCompanyDetails,
         editCompanyDetails,
         editPunchInDetails,
+        postWeekendDetails,
         companyDocuments,
         postCompanyDocument,
         deleteCompanyDocument,
+        addPunchInDetails,
         punchInDetails,
         holidayDetails,
         weekendDetails
