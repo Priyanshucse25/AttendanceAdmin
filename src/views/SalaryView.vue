@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { usesalaryStore } from "@/stores/salaryStore";
 import { storeToRefs } from "pinia";
+import { debounce } from "@/utils/debounce";
 import LottieAnimation from "@/components/LottieAnimation.vue";
 
 // store
@@ -41,6 +42,15 @@ const calculateDeduction = (emp) => {
 const calculatePayable = (emp) => {
   const deduction = calculateDeduction(emp);
   return Math.max(0, Number(emp.actualSalary) - deduction);
+};
+
+const getCurrentMonthDays = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+};
+
+const getPresentDays = (emp) => {
+  return getCurrentMonthDays() - (emp.leave?.length || 0);
 };
 
 // Modal functions
@@ -140,16 +150,24 @@ const fetchSalaries = () => {
     search: searchName.value,
     department: selectedDepartment.value,
     status: selectedStatus.value,
+    page: page.value,
+    limit: limit.value,
   });
 };
+
+const debouncedFetchSalaries = debounce(fetchSalaries, 500);
 
 watch(
   [searchName, selectedDepartment, selectedStatus],
   () => {
     page.value = 0;
-    fetchSalaries();
+    debouncedFetchSalaries();
   }
 );
+
+watch(page, () => {
+  fetchSalaries(); // no debounce here
+});
 
 const nextPage = () => {
   page.value++;
@@ -212,7 +230,7 @@ const prevPage = () => {
               <th class="text-center px-4 py-2">Paid Leaves</th>
               <th class="text-center px-4 py-2">Leaves</th>
               <th class="text-center px-4 py-2">Half Day</th>
-              <th class="text-center px-4 py-2">Sick Leaves</th>
+              <!-- <th class="text-center px-4 py-2">Sick Leaves</th> -->
               <th class="text-left px-4 py-2">Add On</th>
               <th class="text-left px-4 py-2">Actual Salary</th>
               <th class="text-left px-4 py-2">Payable</th>
@@ -230,10 +248,11 @@ const prevPage = () => {
                 calculateTotalLeaves(emp) > 14 ? 'bg-red-50' : '',
               ]"
             >
+            <!-- {{ emp.leave }} -->
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
                   <img
-                    :src="emp.photo || 'https://i.pravatar.cc/40?img=1'"
+                    :src="emp.image"
                     alt="avatar"
                     class="w-8 h-8 rounded-full object-cover"
                   />
@@ -243,7 +262,7 @@ const prevPage = () => {
                   </div>
                 </div>
               </td>
-              <td class="px-4 py-3">{{ emp.department }}</td>
+              <td class="px-4 py-3 capitalize">{{ emp.department }}</td>
               <td class="px-4 py-3">
                 <span
                   class="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs"
@@ -251,16 +270,18 @@ const prevPage = () => {
                   {{ emp.type }}
                 </span>
               </td>
-              <td class="text-center px-4 py-3">{{ emp.present }}</td>
-              <td class="text-center px-4 py-3">{{ emp.paidLeaves }}</td>
-              <td class="text-center px-4 py-3">{{ emp.leaves }}</td>
+              <td class="text-center px-4 py-3">{{ getPresentDays(emp) }}</td>
+              <td class="text-center px-4 py-3">{{
+                emp.leave?.filter(l => l.type === 'paid').length || 0
+              }}</td>
+              <td class="text-center px-4 py-3">{{ emp.leave.length }}</td>
               <td class="text-center px-4 py-3">
                 {{ emp.halfDay }}
                 <span class="text-xs text-gray-400"
                   >({{ (emp.halfDay / 2).toFixed(1) }}d)</span
                 >
               </td>
-              <td class="text-center px-4 py-3">{{ emp.sickLeaves }}</td>
+              <!-- <td class="text-center px-4 py-3">{{ emp.sickLeaves }}</td> -->
               <td class="px-4 py-3">
                 <span
                   v-if="emp.addOn && emp.addOn !== '------'"
@@ -300,21 +321,16 @@ const prevPage = () => {
               <td class="px-4 py-3 text-right">
                 <button 
                   @click="openEditModal(emp)"
-                  class="text-gray-500 hover:text-blue-600 mr-2"
+                  class="text-gray-500 hover:text-blue-600 mr-2 pi pi-pen-to-square text-[20px]"
                   title="Edit Salary"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
+                  
                 </button>
                 <button 
                   @click="generateInvoice(emp)"
-                  class="text-gray-500 hover:text-green-600"
+                  class="text-gray-500 hover:text-green-600 pi pi-file text-[20px]"
                   title="Generate Invoice"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
                 </button>
               </td>
             </tr>

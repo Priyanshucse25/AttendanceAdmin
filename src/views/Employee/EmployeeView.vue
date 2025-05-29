@@ -4,6 +4,7 @@ import { useEmployeeStore } from "@/stores/employeeStore";
 import EmployeeModal from "./AddNewEmployeeModal.vue";
 import DeleteEmployeeModal from "./DeleteEmployeeModal.vue";
 import { storeToRefs } from "pinia";
+import { debounce } from "@/utils/debounce";
 import LottieAnimation from "@/components/LottieAnimation.vue";
 
 const employeeStore = useEmployeeStore();
@@ -42,8 +43,27 @@ function openDeleteModal(employee) {
   showDeleteModal.value = true;
 }
 
+const fetchEmployee = () => {
+  employeeStore.getallEmployees({
+    search: searchQuery.value,
+    department: filterDept.value,
+    page: page.value,
+    limit: limit.value,
+  });
+};
+
+const debouncedFetchEmployee = debounce(fetchEmployee, 500);
+
+watch(
+  [searchQuery, filterDept],
+  () => {
+    page.value = 1;
+    debouncedFetchEmployee();
+  }
+);
+
 watch(page, () => {
-  employeeStore.getallEmployees(true);
+  fetchEmployee(); // no debounce here
 });
 
 const nextPage = () => {
@@ -61,9 +81,9 @@ const prevPage = () => {
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-xl font-bold">Employee list</h1>
       <div class="space-x-2">
-        <button class="bg-white border px-6 py-2 rounded shadow text-sm">
+        <!-- <button class="bg-white border px-6 py-2 rounded shadow text-sm">
           Download
-        </button>
+        </button> -->
         <button
           @click="showModal = true"
           class="bg-[#6E62FF] text-white px-6 py-2 rounded shadow text-sm"
@@ -95,9 +115,9 @@ const prevPage = () => {
     </div>
 
     <!-- Table -->
-    <template v-if="filteredEmployees && filteredEmployees.length > 0">
-      <div class="bg-white shadow rounded overflow-hidden mt-4">
-        <table class="w-full text-sm">
+    <template v-if="allEmployeeData && allEmployeeData.length > 0">
+      <div class="overflow-x-auto no-scrollbar mt-4">
+        <table class="min-w-[1200px] w-full whitespace-nowrap text-sm">
           <thead class="bg-gray-100 text-left">
             <tr>
               <th class="p-3">Employee Name & ID</th>
@@ -113,7 +133,7 @@ const prevPage = () => {
           </thead>
           <tbody>
             <tr
-              v-for="(employee, index) in filteredEmployees"
+              v-for="(employee, index) in allEmployeeData"
               :key="index"
               class="border-t"
             >
@@ -139,7 +159,7 @@ const prevPage = () => {
               <td class="p-3">{{ employee.department }}</td>
               <td class="p-3">{{ employee.role }}</td>
               <td class="p-3">{{ formatDate(employee.joiningDate) }}</td>
-              <td class="p-3">{{ employee.salary }}</td>
+              <td class="p-3">{{ Number(employee.salary).toLocaleString('en-IN') }}</td>
               <td class="p-3 flex gap-3">
                 <button
                   @click="openEditModal(employee)"
@@ -177,11 +197,11 @@ const prevPage = () => {
 
         <button
           @click="nextPage"
-          :disabled="filteredEmployees.length < limit"
+          :disabled="allEmployeeData.length < limit"
           :class="{
             'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
-            'cursor-pointer': filteredEmployees.length >= limit,
-            'cursor-not-allowed': filteredEmployees.length < limit
+            'cursor-pointer': allEmployeeData.length >= limit,
+            'cursor-not-allowed': allEmployeeData.length < limit
           }"
         ></button>
       </div>
@@ -192,7 +212,7 @@ const prevPage = () => {
     </div>
 
     <div
-      v-if="!loading && !filteredEmployees.length"
+      v-if="!loading && !allEmployeeData.length"
       class="w-[350px] mt-[200px] mx-auto"
     >
       <LottieAnimation animationPath="/animation/no-data.json" />

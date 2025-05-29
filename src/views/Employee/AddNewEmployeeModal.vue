@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from "vue";
+import { ref, watch, onMounted, onBeforeUnmount, computed } from "vue";
 import { useEmployeeStore } from "@/stores/employeeStore";
 import LottieAnimation from "@/components/LottieAnimation.vue";
 
@@ -52,6 +52,7 @@ const imagePreview = ref(null);
 const errors = ref([]);
 const originalImageUrl = ref(null); // Track original image URL
 const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+const isNewImage = computed(() => formData.value.userimage instanceof File);
 
 // Populate form when editing
 const populateForm = (emp) => {
@@ -84,26 +85,32 @@ watch(() => props.employee, (newVal) => {
 
 const handleFileChange = (e) => {
   const file = e.target.files[0];
+
   if (file) {
     if (!file.type.startsWith("image/")) {
       errors.value.push("Please select a valid image file");
       return;
     }
+
     if (file.size > 5 * 1024 * 1024) {
       errors.value.push("File must be under 5MB");
       return;
     }
+
     errors.value = errors.value.filter((err) => !err.includes("File") && !err.includes("image"));
     formData.value.userimage = file;
-    
+
     // Clean up previous preview URL if it was a blob
     if (imagePreview.value && imagePreview.value.startsWith('blob:')) {
       URL.revokeObjectURL(imagePreview.value);
     }
-    
+
     imagePreview.value = URL.createObjectURL(file);
   }
 };
+
+
+const isEditMode = !!props.employee?.userId;
 
 const validateForm = () => {
   errors.value = [];
@@ -125,7 +132,7 @@ const validateForm = () => {
     { key: "role", label: "Role" },
     { key: "joiningDate", label: "Joining Date" },
     { key: "salary", label: "Salary" },
-    { key: "pin", label: "PIN" },
+    ...(!isEditMode ? [{ key: "pin", label: "PIN" }] : []),
   ];
 
   for (const field of requiredFields) {
@@ -139,9 +146,9 @@ const validateForm = () => {
     errors.value.push("Please enter a valid email address");
   }
 
-  if (formData.value.pin && !/^\d{4}$/.test(formData.value.pin)) {
-    errors.value.push("PIN must be a 4-digit number");
-  }
+  if (!isEditMode && formData.value.pin && !/^\d{4}$/.test(formData.value.pin)) {
+  errors.value.push("PIN must be a 4-digit number");
+}
 
   if (formData.value.salary && (isNaN(formData.value.salary) || parseFloat(formData.value.salary) <= 0)) {
     errors.value.push("Please enter a valid salary amount");
@@ -235,25 +242,37 @@ const submitEmployeeForm = async () => {
 };
 
 const updateEmployeeData = async (userId) => {
+  const uploadData = new FormData();
+  const original = props.employee || {};
 
-  // Step 1: Build JSON payload from formData
-  const jsonPayload = {};
   const fields = [
     "userName", "fatherName", "motherName", "email", "phoneNumber", "birthdate", "gender",
     "maritalStatus", "bloodGroup", "currentAddress", "permanentAddress", "emergencyNumber",
-    "emptype", "department", "role", "joiningDate", "salary", "pin"
+    "emptype", "department", "role", "joiningDate", "salary"
   ];
 
   fields.forEach((field) => {
-    const value = formData.value[field];
-    if (value !== null && value !== undefined && value !== '') {
-      jsonPayload[field] = String(value).trim();
+    const newValue = formData.value[field];
+    const originalValue = original[field];
+
+    // Normalize values for comparison
+    const newVal = typeof newValue === "string" ? newValue.trim() : newValue;
+    const origVal = typeof originalValue === "string" ? originalValue.trim() : originalValue;
+
+    if (newVal !== origVal) {
+      uploadData.append(field, String(newVal));
     }
   });
 
-  // Step 2: Call the store method, sending pure JSON
-  return employeeStore.updateEmployee(userId, jsonPayload);
+  // Append image only if it's a new file (not the original URL string)
+  if (formData.value.userimage instanceof File) {
+    uploadData.append("userimage", formData.value.userimage, formData.value.userimage.name);
+  }
+
+  // Call the store action
+  await employeeStore.updateEmployee(userId, uploadData);
 };
+
 
 
 const nextStep = () => {
@@ -424,7 +443,7 @@ onBeforeUnmount(() => {
               class="mx-auto rounded-md max-h-40 object-contain"
             />
             <div class="text-xs text-gray-500 mt-2">
-              {{ formData.userimage instanceof File ? 'New image selected' : 'Current image' }}
+              {{ isNewImage ? 'New image selected' : 'Current image' }}
             </div>
           </div>
         </div>
@@ -464,6 +483,7 @@ onBeforeUnmount(() => {
             class="input"
           />
           <input
+          v-if="!isEditMode"
             v-model="formData.pin"
             type="password"
             maxlength="4"

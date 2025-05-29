@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { makeRequest } from "@/request/request";
-import { manageResponse } from "@/request/manageResponse";
+// import { manageResponse } from "@/request/manageResponse";
 import { ref } from "vue";
 
 export const useLeaveStore = defineStore("leave", () => {
@@ -11,22 +11,29 @@ export const useLeaveStore = defineStore("leave", () => {
   const limit = ref(10)
   const totalPages = ref("")
 
-  const getUserLeaves = async () => {
+  const getUserLeaves = async (filters = {}) => {
     try {
       loading.value = true;
+
+      const queryParams = {
+        page: page.value,
+        limit: limit.value,
+        ...filters, // Spread searchName, department, status
+      };
+
       const response = await makeRequest(
         endpoint,
         "GET",
         {},
         {},
-        {page : page.value, limit: limit.value},
+        queryParams,
         0,
         null,
         "/admin"
       );
       leaveData.value = response?.leaves;
       totalPages.value = response?.totalPages
-      manageResponse(response, {method : "GET"})
+      // manageResponse(response, {method : "GET"})
     } catch (error) {
       console.error("Error in leave", error);
     } finally{
@@ -55,7 +62,7 @@ export const useLeaveStore = defineStore("leave", () => {
       };
     }
 
-    manageResponse(response, {method : "PUT"})
+    // manageResponse(response, {method : "PUT"})
 
     return response;
     } catch (error) {
