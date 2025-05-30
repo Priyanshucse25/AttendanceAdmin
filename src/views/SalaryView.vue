@@ -7,7 +7,8 @@ import LottieAnimation from "@/components/LottieAnimation.vue";
 
 // store
 const salaryStore = usesalaryStore();
-const { salaryData, salaryRecords, loading, page, limit, totalPages } = storeToRefs(salaryStore);
+const { salaryData, salaryRecords, loading, page, limit, totalPages } =
+  storeToRefs(salaryStore);
 
 const searchName = ref("");
 const selectedDepartment = ref("");
@@ -147,7 +148,8 @@ const addSalaryAddOn = async () => {
           ...salaryData.value[index],
           addOnAmount: addOnAmount.value,
           addOn: addOnTitle.value,
-          payable: updatedPayable  + Number(salaryData.value[index].addOnAmount || 0),
+          payable:
+            updatedPayable + Number(salaryData.value[index].addOnAmount || 0),
         };
       }
 
@@ -180,13 +182,10 @@ const fetchSalaries = async () => {
   });
 };
 
-watch(
-  [searchName, selectedDepartment, selectedStatus],
-  () => {
-    page.value = 1;
-    fetchSalaries();
-  }
-);
+watch([searchName, selectedDepartment, selectedStatus], () => {
+  page.value = 1;
+  fetchSalaries();
+});
 
 const nextPage = () => {
   if (page.value < totalPages.value) {
@@ -201,8 +200,17 @@ const prevPage = () => {
     fetchSalaries();
   }
 };
+//status toggle function
+function toggleStatus(emp) {
+  if (emp.status === 'Pending') {
+    emp.status = 'Paid';
+  } else if (emp.status === 'Paid') {
+    emp.status = 'Unpaid';
+  } else {
+    emp.status = 'Pending';
+  }
+}
 </script>
-
 
 <template>
   <main class="bg-white w-full rounded-md p-4">
@@ -259,7 +267,7 @@ const prevPage = () => {
               <th class="text-left px-4 py-2">Add On</th>
               <th class="text-left px-4 py-2">Actual Salary</th>
               <th class="text-left px-4 py-2">Payable</th>
-              <th class="text-left px-4 py-2">Status</th> 
+              <th class="text-left px-4 py-2">Status</th>
               <th class="text-right px-4 py-2">Action</th>
             </tr>
           </thead>
@@ -295,9 +303,9 @@ const prevPage = () => {
                 </span>
               </td>
               <td class="text-center px-4 py-3">{{ getPresentDays(emp) }}</td>
-              <td class="text-center px-4 py-3">{{
-                emp.leave?.filter(l => l.type === 'paid').length || 0
-              }}</td>
+              <td class="text-center px-4 py-3">
+                {{ emp.leave?.filter((l) => l.type === "paid").length || 0 }}
+              </td>
               <td class="text-center px-4 py-3">{{ emp.leave.length }}</td>
               <td class="text-center px-4 py-3">
                 {{ emp.halfDay }}
@@ -308,15 +316,17 @@ const prevPage = () => {
               <!-- <td class="text-center px-4 py-3">{{ emp.sickLeaves }}</td> -->
               <td class="px-4 py-3">
                 <span
-                  v-if="emp.addOns && emp.addOns !== '------'"
-                  v-for="(addon, index) in emp.addOns"
-                  
+                  v-if="
+                    emp.addOns && emp.addOns.length && emp.addOns !== '------'
+                  "
+                  class="bg-blue-100 text-blue-600 rounded text-xs px-3 py-1 inline-block"
                 >
-                  {{ addon.amount }} {{ addon.type }}
-                  <span v-if="index < emp.addOns.length - 1">, </span>
+                  {{ emp.addOns[emp.addOns.length - 1].amount }}
+                  {{ emp.addOns[emp.addOns.length - 1].type }}
                 </span>
                 <span v-else class="text-gray-400 text-xs">------</span>
               </td>
+
               <td class="px-4 py-3">₹{{ emp.actualSalary }}</td>
               <td class="px-4 py-3">
                 ₹{{ calculatePayable(emp) }}
@@ -328,31 +338,32 @@ const prevPage = () => {
                 </p>
               </td>
               <td class="px-4 py-3">
-                <span
+                <button
+                  @click="toggleStatus(emp)"
                   :class="[
-                    'px-2 py-1 rounded text-xs font-medium',
+                    'px-3 py-1 rounded text-xs font-semibold focus:outline-none transition',
                     emp.status === 'Paid'
                       ? 'bg-green-100 text-green-600'
+                      : emp.status === 'Unpaid'
+                      ? 'bg-red-100 text-red-600'
                       : 'bg-yellow-100 text-yellow-600',
                   ]"
                 >
                   {{ emp.status }}
-                </span>
+                </button>
               </td>
+
               <td class="px-4 py-3 text-right">
-                <button 
+                <button
                   @click="openEditModal(emp)"
                   class="text-gray-500 hover:text-blue-600 mr-2 pi pi-pen-to-square text-[20px]"
                   title="Edit Salary"
-                >
-                  
-                </button>
-                <button 
+                ></button>
+                <button
                   @click="generateInvoice(emp)"
                   class="text-gray-500 hover:text-green-600 pi pi-file text-[20px]"
                   title="Generate Invoice"
-                >
-                </button>
+                ></button>
               </td>
             </tr>
 
@@ -375,11 +386,11 @@ const prevPage = () => {
           :class="{
             'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-left': true,
             'cursor-pointer': page > 1,
-            'cursor-not-allowed': page === 1
+            'cursor-not-allowed': page === 1,
           }"
         ></button>
 
-        <p>Page {{ page }} of {{totalPages}}</p>
+        <p>Page {{ page }} of {{ totalPages }}</p>
 
         <button
           @click="nextPage"
@@ -387,7 +398,7 @@ const prevPage = () => {
           :class="{
             'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
             'cursor-pointer': salaryData.length >= limit,
-            'cursor-not-allowed': salaryData.length < limit
+            'cursor-not-allowed': salaryData.length < limit,
           }"
         ></button>
       </div>
@@ -411,18 +422,26 @@ const prevPage = () => {
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       @click="closeEditModal"
     >
-      <div
-        class="bg-white rounded-lg p-6 w-full max-w-md mx-4"
-        @click.stop
-      >
+      <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4" @click.stop>
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold">Edit Salary</h3>
           <button
             @click="closeEditModal"
             class="text-gray-500 hover:text-gray-700"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -433,12 +452,14 @@ const prevPage = () => {
             <p class="font-medium">{{ selectedEmployee.name }}</p>
             <p class="text-sm text-gray-600">{{ selectedEmployee.empId }}</p>
           </div>
-          
+
           <!-- Salary Breakdown -->
           <div class="mb-4 space-y-2">
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Base Salary:</span>
-              <span class="font-medium">₹{{ selectedEmployee.actualSalary }}</span>
+              <span class="font-medium"
+                >₹{{ selectedEmployee.actualSalary }}</span
+              >
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Add-On Amount:</span>
@@ -446,19 +467,21 @@ const prevPage = () => {
                 +₹{{ selectedEmployee.addOnAmount || 0 }}
               </span>
             </div>
-            <hr>
+            <hr />
             <div class="flex justify-between">
               <span class="font-medium">Total Salary:</span>
-              <span class="font-semibold text-lg">₹{{ calculateTotalSalary(selectedEmployee) }}</span>
+              <span class="font-semibold text-lg"
+                >₹{{ calculateTotalSalary(selectedEmployee) }}</span
+              >
             </div>
           </div>
-          
+
           <button
             @click="toggleAddOnForm"
             class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-4"
             :disabled="loading"
           >
-            {{ showAddOnForm ? 'Cancel Add-On' : 'Add Bonus/Incentive' }}
+            {{ showAddOnForm ? "Cancel Add-On" : "Add Bonus/Incentive" }}
           </button>
 
           <!-- Add On Form -->
@@ -479,27 +502,49 @@ const prevPage = () => {
                 :disabled="loading"
               />
             </div>
-            
+
             <button
               @click="addSalaryAddOn"
               :disabled="loading"
               class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
             >
               <span v-if="loading" class="mr-2">
-                <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  class="animate-spin h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
               </span>
-              {{ loading ? 'Adding...' : 'Add This Add-On' }}
+              {{ loading ? "Adding..." : "Add This Add-On" }}
             </button>
           </div>
 
           <!-- Current Add-ons -->
-          <div v-if="selectedEmployee.addOn && selectedEmployee.addOn !== '------'" class="mt-4">
+          <div
+            v-if="selectedEmployee.addOn && selectedEmployee.addOn !== '------'"
+            class="mt-4"
+          >
             <p class="text-sm text-gray-600 mb-2">Current Add-on:</p>
-            <div class="flex justify-between items-center p-2 bg-purple-50 rounded">
-              <span class="bg-purple-100 text-purple-600 px-2 py-1 rounded text-sm">
+            <div
+              class="flex justify-between items-center p-2 bg-purple-50 rounded"
+            >
+              <span
+                class="bg-purple-100 text-purple-600 px-2 py-1 rounded text-sm"
+              >
                 {{ selectedEmployee.addOn }}
               </span>
               <span class="text-green-600 font-medium">
