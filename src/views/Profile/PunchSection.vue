@@ -19,18 +19,7 @@ const lunchFrom = ref("");
 const lunchTo = ref("");
 const breaks = ref([{ from: "", to: "" }]);
 
-// Watch for punchInDetails and set the first one as default
-watch(
-  punchInDetails,
-  (details) => {
-    if (Array.isArray(details) && details.length) {
-      selectedShift.value = details[0]; // default to first shift
-      populateForm(selectedShift.value);
-    }
-  },
-  { immediate: true }
-);
-
+// ✅ Format ISO string to HH:mm (for displaying in inputs)
 function formatTimeFromISO(isoStr) {
   if (!isoStr) return "";
   const date = new Date(isoStr);
@@ -38,6 +27,32 @@ function formatTimeFromISO(isoStr) {
   const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${hours}:${minutes}`;
 }
+
+// ✅ Convert HH:mm to IST ISO string (e.g., "2025-05-30T10:00:00+05:30")
+function timeStringToISTISO(timeStr) {
+  const [hours, minutes] = timeStr.split(":").map(Number);
+  const now = new Date();
+  now.setHours(hours, minutes, 0, 0);
+
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const min = String(now.getMinutes()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}:00+05:30`;
+}
+
+watch(
+  punchInDetails,
+  (details) => {
+    if (Array.isArray(details) && details.length) {
+      selectedShift.value = details[0];
+      populateForm(selectedShift.value);
+    }
+  },
+  { immediate: true }
+);
 
 function addBreak() {
   breaks.value.push({ from: "", to: "" });
@@ -67,37 +82,27 @@ function populateForm(item) {
   }
 }
 
-function timeStringToDate(timeStr) {
-  const [hours, minutes] = timeStr.split(":").map(Number);
-  const now = new Date();
-  now.setHours(hours);
-  now.setMinutes(minutes);
-  now.setSeconds(0);
-  now.setMilliseconds(0);
-  return now;
-}
-
 const submitChanges = async () => {
   const hasId = !!selectedShift.value?._id;
 
   const data = {
     shiftTime: {
-      from: timeStringToDate(shiftFrom.value),
-      to: timeStringToDate(shiftTo.value),
+      from: timeStringToISTISO(shiftFrom.value),
+      to: timeStringToISTISO(shiftTo.value),
     },
     bufferTime: {
-      from: timeStringToDate(bufferFrom.value),
-      to: timeStringToDate(bufferTo.value),
+      from: timeStringToISTISO(bufferFrom.value),
+      to: timeStringToISTISO(bufferTo.value),
     },
     lunchTime: {
-      from: timeStringToDate(lunchFrom.value),
-      to: timeStringToDate(lunchTo.value),
+      from: timeStringToISTISO(lunchFrom.value),
+      to: timeStringToISTISO(lunchTo.value),
     },
     breaks: breaks.value
       .filter((b) => b.from && b.to)
       .map((b) => ({
-        from: timeStringToDate(b.from),
-        to: timeStringToDate(b.to),
+        from: timeStringToISTISO(b.from),
+        to: timeStringToISTISO(b.to),
       })),
   };
 
@@ -112,6 +117,8 @@ const submitChanges = async () => {
   isEditing.value = false;
 };
 </script>
+
+
 
 <template>
   <div class="space-y-6 mt-6 max-w-4xl">

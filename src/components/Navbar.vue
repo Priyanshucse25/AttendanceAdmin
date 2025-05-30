@@ -3,6 +3,25 @@ import { ref } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useCustomToast } from "@/utils/toast-function";
+import { useNotificationStore } from "@/stores/notificationStore";
+import { storeToRefs } from "pinia";
+import { io } from "socket.io-client";
+
+const notificationStore = useNotificationStore()
+
+const {notificationData} = storeToRefs(notificationStore)
+
+const socket = io("http://192.168.1.8:8000",{transports: ["websocket"]}); // replace with your backend URL/port
+
+socket.on("connect", () => {
+  console.log("✅ Admin connected:", socket.id);
+  socket.emit("register", "admin"); // tell server this is an admin
+});
+
+socket.on("notification", (msg) => {
+    console.log("📩 New message from user:", msg);
+    notificationData.value.push(msg);
+});
 
 const authStore = useAuthStore()
 const toast = useCustomToast();
@@ -30,6 +49,7 @@ const menu = [
 
 const isMenuopen = ref(false)
 const sidebarOpen = ref(false);
+const isNotificationOpen = ref(false);
 
 const toggleMenu = () => {
   isMenuopen.value = !isMenuopen.value
@@ -38,6 +58,10 @@ const toggleMenu = () => {
 const toggleSidebar = () => {
   sidebarOpen.value = !sidebarOpen.value;
 };
+
+function toggleNotification() {
+  isNotificationOpen.value = !isNotificationOpen.value;
+}
 
 const handleLogout = async () => {
   await authStore.logout()
@@ -66,7 +90,28 @@ const handleLogout = async () => {
       </router-link>
     </div>
     <div class="flex items-center">
-      <img src="/svg/bell.svg" alt="admin" class="h-8 w-8 mr-2" />
+      <button @click="toggleNotification"><img src="/svg/bell.svg" alt="admin" class="h-8 w-8 mr-2" /></button>
+
+      <transition name="fade">
+        <div
+          v-if="isNotificationOpen"
+          class="absolute right-5 top-14 w-72 bg-white shadow-md rounded-md z-30 max-h-60 overflow-y-auto"
+        >
+          <div class="p-3 border-b font-semibold">Notifications</div>
+          <div v-if="notificationData.length === 0" class="p-3 text-sm text-gray-500">
+            No notifications.
+          </div>
+          <ul>
+            <li
+              v-for="(notification, index) in notificationData"
+              :key="index"
+              class="px-4 py-2 hover:bg-gray-100 text-sm border-b"
+            >
+              {{ notification.message || notification }} <!-- Adjust depending on message structure -->
+            </li>
+          </ul>
+        </div>
+      </transition>
       
 
       <div class="flex items-center gap-4">

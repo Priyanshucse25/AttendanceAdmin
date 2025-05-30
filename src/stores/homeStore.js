@@ -1,5 +1,6 @@
 import { makeRequest } from "@/request/request";
 import { defineStore } from "pinia";
+import { toast } from "vue3-toastify";
 import { ref } from "vue";
 
 export const useHomeStore = defineStore("home", () => {
@@ -43,9 +44,18 @@ export const useHomeStore = defineStore("home", () => {
  const updateAttendenceStatus = async(id, status) =>{
         try {
            const response = await makeRequest(endpoint, "PUT", {status: status}, {}, {}, 0, id, "/userdata")
+
+           console.log(response)
+           console.log(response.status)
+
+           if(response.status === "success"){
+            toast.success("Status change succesfully!")
+          }
+
             return response
         } catch (error) {
             console.error("Error in Home" ,error)
+            toast.error("Error in changing status!")
         }
     }
 

@@ -8,7 +8,14 @@ const leaveStore = useLeaveStore();
 const { leaveData } = storeToRefs(leaveStore);
 
 const approvedEmployees = computed(() => {
-  return leaveData.value?.filter((leave) => leave.status === "approved");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // normalize time to compare only dates
+
+  return leaveData.value?.filter((leave) => {
+    const toDate = new Date(leave.to);
+    toDate.setHours(0, 0, 0, 0);
+    return leave.status === "approved" && toDate >= today;
+  });
 });
 
 function formatDate(isoString) {

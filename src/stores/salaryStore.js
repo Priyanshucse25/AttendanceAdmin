@@ -1,5 +1,6 @@
 import { makeRequest } from "@/request/request";
 import { defineStore } from "pinia";
+import { toast } from "vue3-toastify";
 import { ref } from "vue";
 
 export const usesalaryStore = defineStore("salary", () => {
@@ -68,8 +69,8 @@ export const usesalaryStore = defineStore("salary", () => {
     // Optional: get unique addOn types
     const uniqueAddOnTypes = [...new Set(allAddOns.map((a) => a.type))];
 
-    console.log("All AddOns:", allAddOns);
-    console.log("Unique AddOn Types:", uniqueAddOnTypes);
+    // console.log("All AddOns:", allAddOns);
+    // console.log("Unique AddOn Types:", uniqueAddOnTypes);
 
     salaryData.value = enrichedData;
     salaryRecords.value = salaryRecordsArr;
@@ -99,6 +100,10 @@ export const usesalaryStore = defineStore("salary", () => {
         "/salarydetails"
       );
 
+      if(response.status === "success"){
+            toast.success("Updated employee salary successfully!")
+      }
+
       // Update the local data if the request is successful
       if (response && response.success) {
         const empIndex = salaryData.value.findIndex(
@@ -118,6 +123,7 @@ export const usesalaryStore = defineStore("salary", () => {
       return response;
     } catch (error) {
       console.error("Error updating salary:", error);
+      toast.error("Error in updating employee salary!")
       throw error;
     } finally {
       loading.value = false;

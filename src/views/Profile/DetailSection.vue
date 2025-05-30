@@ -38,11 +38,7 @@ watchEffect(() => {
 })
 
 function toggleEdit() {
-  if (isEditing.value) {
-    submitForm()
-  } else {
-    isEditing.value = true
-  }
+  isEditing.value = !isEditing.value
 }
 
 const submitForm = async () => {
@@ -68,7 +64,7 @@ const submitForm = async () => {
     <div class="flex items-center justify-end gap-4">
       <button
         @click="toggleEdit"
-        class="px-4 py-2 text-sm rounded-md shadow text-white"
+        class="px-8 py-2 text-sm rounded-md shadow text-white"
         :class="isEditing ? 'bg-red-400 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'"
       >
         {{ isEditing ? 'Cancel' : 'Edit' }}
@@ -76,6 +72,7 @@ const submitForm = async () => {
       <div v-if="isEditing" class="text-right">
         <button
           type="submit"
+          @click="submitForm"
           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow text-sm"
         >
           Submit
