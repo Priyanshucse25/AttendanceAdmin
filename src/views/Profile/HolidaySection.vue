@@ -1,25 +1,13 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref } from "vue";
 import { useProfileStore } from "@/stores/profileStore";
 import { storeToRefs } from "pinia";
-import socket from "@/utils/admin-socket.js"
 
 const profileStore = useProfileStore();
 
 const { holidayDetails } = storeToRefs(profileStore);
 
 const showAddHoliday = ref(false);
-
-onMounted(() => {
-  socket.on("notification", (msg) => {
-    console.log("📩 New message from user:", msg);
-    // You can trigger a toast, modal, or badge counter here
-  });
-});
-
-onBeforeUnmount(() => {
-  socket.off("notification");
-});
 
 // Form inputs
 const newHolidayName = ref("");

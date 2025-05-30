@@ -193,7 +193,6 @@ const prevPage = () => {
                 >
                   Absent
                 </button>
-
                 <button
                   @click="updateAttendence(employee._id, 'halfday')"
                   class="px-3 py-1 rounded font-medium text-sm"
@@ -210,7 +209,7 @@ const prevPage = () => {
                   @click="updateAttendence(employee._id, 'late')"
                   class="px-3 py-1 rounded font-medium text-sm"
                   :class="[
-                    employee.status === 'late'
+                    employee.status === 'halfday' && employee.entryTime === 'late' 
                       ? 'bg-blue-500 bg-opacity-30 text-blue-600'
                       : 'bg-gray-200 text-gray-700 hover:bg-blue-100',
                   ]"
