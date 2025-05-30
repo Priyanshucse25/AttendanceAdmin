@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { makeRequest } from "@/request/request";
-// import { manageResponse } from "@/request/manageResponse";
+import { toast } from "vue3-toastify";
 import { ref } from "vue";
 
 export const useLeaveStore = defineStore("leave", () => {
@@ -53,6 +53,11 @@ export const useLeaveStore = defineStore("leave", () => {
         id,
         "/admin"
       );
+
+    if(response.status === "success"){
+      toast.success("Leave status change succesfully!")
+    }
+
       const index = leaveData.value.findIndex((leave) => leave._id === id);
     if (index !== -1) {
       // ✅ Replace object to ensure reactivity
@@ -61,12 +66,11 @@ export const useLeaveStore = defineStore("leave", () => {
         status: statusType,
       };
     }
-
-    // manageResponse(response, {method : "PUT"})
-
+  
     return response;
     } catch (error) {
       console.error("Error in updating leave", error);
+      toast.error("Error in changing the leave status!")
     }
   };
 

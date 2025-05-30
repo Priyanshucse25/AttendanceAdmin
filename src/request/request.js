@@ -3,7 +3,7 @@ import axios from 'axios'
 // === BASE CONFIG ===
 
 // Set your API base URL once
-const BASE_URL = 'http://192.168.1.8:8000' // Replace with your real API base URL
+const BASE_URL = 'https://attendancebackends.onrender.com' // Replace with your real API base URL
 axios.defaults.baseURL = BASE_URL
 
 // === REQUEST INTERCEPTOR ===

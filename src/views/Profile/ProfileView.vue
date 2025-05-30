@@ -46,27 +46,45 @@ const toggleEdit = () => {
   }
 };
 
-const onImageChange = (event) => {
+const onImageChange = async (event) => {
   const file = event.target.files[0];
+
   if (file) {
-    selectedImage.value = file;                    // keep the file for upload
-    previewImage.value = URL.createObjectURL(file); // set preview URL
+    // Revoke old preview URL
+    if (previewImage.value) {
+      URL.revokeObjectURL(previewImage.value);
+    }
+
+    selectedImage.value = file;
+    previewImage.value = URL.createObjectURL(file);
+
+    // Prepare FormData
+    const formData = new FormData();
+    formData.append("image", file); // Match backend field name
+
+    try {
+      // Replace 'companyDetails._id' with the actual ID in scope
+      await makeRequest("/admin/companydetails", "PUT", formData, {}, {}, 0, companyDetails._id);
+      console.log("✅ Image uploaded successfully");
+    } catch (err) {
+      console.error("❌ Error uploading image:", err);
+    }
   }
 };
 
-const submitCompanyDetails = async (id) => {
-  if (!selectedImage.value) return;
+// const submitCompanyDetails = async (id) => {
+//   if (!selectedImage.value) return;
 
-  const formData = new FormData();
-  formData.append("image", selectedImage.value); // Make sure this field name matches backend expectation
+//   const formData = new FormData();
+//   formData.append("image", selectedImage.value); // Make sure this field name matches backend expectation
 
-  try {
-    // await profileStore.editCompanyDetails(formData); // should accept only image
-    await makeRequest("/admin/edit", "PUT", formData, {}, {}, 0, id)
-  } catch (err) {
-    console.error("Error uploading company image", err);
-  }
-};
+//   try {
+//     // await profileStore.editCompanyDetails(formData); // should accept only image
+//     await makeRequest("/admin/edit", "PUT", formData, {}, {}, 0, id)
+//   } catch (err) {
+//     console.error("Error uploading company image", err);
+//   }
+// };
 
 </script>
 
@@ -83,12 +101,12 @@ const submitCompanyDetails = async (id) => {
           class="relative w-[80px] h-[80px] rounded-full overflow-hidden group"
         >
           <img
-            :src="companyDetails.image || '/images/dummy_profile_img.jpg'"
+            :src="companyDetails.cmpDetail?.image|| '/images/dummy_profile_img.jpg'"
             alt="Profile"
             class="w-full h-full object-cover"
           />
           <label
-            class="absolute bottom-0 right-0 bg-white border border-gray-300 rounded-full p-1 cursor-pointer shadow-sm group-hover:opacity-100 opacity-0 transition h-fit"
+            class="absolute bottom-2 right-1 bg-white border border-gray-300 rounded-full px-1 cursor-pointer shadow-sm transition h-fit"
             title="Change Image"
           >
             <input
@@ -104,29 +122,29 @@ const submitCompanyDetails = async (id) => {
         <!-- Company Info -->
         <div class="flex-1 relative space-y-1">
           <!-- Toggle Edit Button -->
-          <button
+          <!-- <button
             type="button"
             class="absolute top-0 right-0 p-1 text-sm text-gray-500 hover:text-gray-800"
             @click="toggleEdit"
             title="Edit Details"
           >
             <i class="pi pi-pencil text-sm"></i>
-          </button>
+          </button> -->
 
           <!-- Name -->
           <h2 class="font-semibold capitalize text-[20px]">
-            <template v-if="editMode">
+            <!-- <template v-if="editMode">
               <input
                 v-model="form.name"
                 placeholder="Company Name"
                 class="border rounded px-2 py-0.5 w-[30%] text-[16px]"
               />
-            </template>
-            <template v-else>{{ companyDetails.name }}</template>
+            </template> -->
+            <p >{{ companyDetails.name }}</p>
           </h2>
           <!-- Organisation & Industry -->
           <div class="flex gap-4 text-[14px] w-[50%]">
-            <template v-if="editMode">
+            <!-- <template v-if="editMode">
               <input
                 placeholder="Organisation"
                 v-model="form.organisation"
@@ -137,16 +155,16 @@ const submitCompanyDetails = async (id) => {
                 v-model="form.industry"
                 class="border rounded px-2 py-0.5 w-full text-[13px]"
               />
-            </template>
-            <template v-else>
+            </template> -->
+            <div class="flex items-center gap-4">
               <p>{{ companyDetails.organisation }}</p>
               <p>{{ companyDetails.industry }}</p>
-            </template>
+            </div>
           </div>
 
           <!-- Team Size & Years -->
           <div class="flex gap-4 text-[14px]">
-            <template v-if="editMode">
+            <!-- <template v-if="editMode">
               <input
                 type="number"
                 placeholder="Team Size"
@@ -159,11 +177,11 @@ const submitCompanyDetails = async (id) => {
                 v-model="form.years"
                 class="border rounded px-2 py-0.5 w-[120px] text-[13px]"
               />
-            </template>
-            <template v-else>
+            </template> -->
+            <div>
               <p>{{ companyDetails.teamSize }} Employees Involved</p>
-              <p>It’s been {{ companyDetails.years }}</p>
-            </template>
+              <!-- <p>It’s been {{ companyDetails.years }}</p> -->
+            </div>
           </div>
 
           <!-- Submit Button -->
@@ -184,11 +202,12 @@ const submitCompanyDetails = async (id) => {
 
     <!-- Tabs Loop -->
     <div
-      class="flex gap-4 bg-custom-gray font-medium rounded-xl p-1 text-[14px]"
+      class="flex gap-4 bg-custom-gray font-medium rounded-xl p-1 text-[14px] overflow-x-auto"
     >
       <button
         v-for="tab in tabs"
         :key="tab.value"
+        class="whitespace-nowrap"
         @click="activeTab = tab.value"
         :class="[
           'px-8 py-2 rounded-xl',

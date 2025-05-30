@@ -1,6 +1,7 @@
 import { makeRequest } from "@/request/request";
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import { toast } from "vue3-toastify";
 
 export const useEmployeeStore = defineStore("employee", () => {
   const endpoint = "admin";
@@ -34,27 +35,38 @@ export const useEmployeeStore = defineStore("employee", () => {
   const createNewEmployee = async (data) => {
     try {
       await makeRequest("/user", "POST", data, {}, {page : page.value, limit: limit.value}, 0, null, "/admin/signup");
+      if(response.status === "success"){
+      toast.success("Employee Created Successfully!")
+    }
       return response; 
     } catch (error) {
       console.error("Error in creating new employee", error);
+      toast.success("Error in employee creation!")
     }
   };
 
   const updateEmployee = async (id, data) => {
     try {
-      console.log("From store" ,data)
-      await makeRequest("/user", "PUT", data, {}, {}, 0, id);
+      const response = await makeRequest("/user", "PUT", data, {}, {}, 0, id);
+      if (response?.status === "success") {
+      toast.success("Employee updated successfully!");
+    }
       return response; 
     } catch (error) {
       console.error("Error in updating employee", error);
+      toast.error("Error in employee updation!");
     }
   }
 
   const deleteEmployee = async (id) => {
     try {
       await makeRequest("/user", "DELETE", {}, {}, {}, 0, id)
+      if (response?.status === "success") {
+      toast.success("Employee deleted successfully!");
+    }
     } catch (error) {
       console.error("Error in deleting employee", error);
+      toast.error("Error in deleting employee!");
     }
   }
 
