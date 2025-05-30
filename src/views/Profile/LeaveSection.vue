@@ -1,17 +1,77 @@
 <script setup>
-import { ref } from 'vue';
+import { ref,onMounted, watch } from 'vue';
+import { useProfileStore } from '@/stores/profileStore';
+import { storeToRefs } from 'pinia';
 
-const leaveTypes = ['Casual Leave', 'Sick Leave', 'Annual Leave'];
+const profileStore = useProfileStore();
+
+const {companyLeaves} = storeToRefs(profileStore)
+
+const isEditing = ref(false); // Controls input enable/disable
+const leaveId = ref(null);
+
+const leaveTypes = ['Casual Leave', 'Annual Leave'];
 
 const leaveData = ref(
   leaveTypes.map(type => ({
-    name: type,
-    cycle: 'monthly',
-    count: '',
+    leaveName: type,
+    cycle: type === 'Casual Leave' ? 'monthly' : 'yearly', // set fixed cycle
+    days: '',
     rule: '',
-    limit: '',
   }))
 );
+
+watch(companyLeaves, (leaves) => {
+  if (leaves && leaves.length > 0) {
+    const { casual, annual, _id } = leaves[0];
+    leaveId.value = _id || null;  // store the ID if present
+
+    leaveData.value = [
+      {
+        leaveName: casual.leaveName,
+        days: casual.days,
+        rule: casual.rule,
+        cycle: casual.cycle,
+      },
+      {
+        leaveName: annual.leaveName,
+        days: annual.days,
+        rule: annual.rule,
+        cycle: annual.cycle,
+      },
+    ];
+  }
+}, { immediate: true });
+
+const submitLeaves = async () => {
+  try {
+    const casual = leaveData.value.find(l => l.leaveName === 'Casual Leave');
+    const annual = leaveData.value.find(l => l.leaveName === 'Annual Leave');
+
+    const payload = {
+      casual: {
+        leaveName: casual.leaveName,
+        days: Number(casual.days),
+        rule: casual.rule,
+        cycle: casual.cycle,
+      },
+      annual: {
+        leaveName: annual.leaveName,
+        days: Number(annual.days),
+        rule: annual.rule,
+        cycle: annual.cycle,
+      },
+      _id: leaveId.value ?? null, // include _id or null
+    };
+
+    await profileStore.postCompanyLeaves(payload);
+    isEditing.value = false;
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+
 </script>
 
 <template>
@@ -33,6 +93,7 @@ const leaveData = ref(
               :name="`cycle-${index}`"
               value="yearly"
               v-model="leave.cycle"
+              :disabled="!isEditing"
               class="accent-purple-600"
             />
             Yearly
@@ -43,6 +104,7 @@ const leaveData = ref(
               :name="`cycle-${index}`"
               value="monthly"
               v-model="leave.cycle"
+              :disabled="!isEditing"
               class="accent-purple-600"
             />
             Monthly
@@ -55,17 +117,13 @@ const leaveData = ref(
         <input
           type="text"
           placeholder="E.g 03"
-          v-model="leave.count"
-          class="input-field"
-        />
-        <input
-          type="time"
-          placeholder="E.g 09:20"
-          v-model="leave.limit"
+          v-model="leave.days"
+          :disabled="!isEditing"
           class="input-field"
         />
         <select
           v-model="leave.rule"
+          :disabled="!isEditing"
           class="input-field"
         >
           <option value="" disabled selected>E.g Carry forward</option>
@@ -77,8 +135,27 @@ const leaveData = ref(
 
     <!-- Action Buttons -->
     <div class="flex justify-end gap-4">
-      <button class="px-6 py-2 bg-gray-100 text-gray-700 rounded">Cancel</button>
-      <button class="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Done</button>
+      <button
+        v-if="!isEditing"
+        @click="isEditing = true"
+        class="px-6 py-2 bg-gray-100 text-gray-700 rounded"
+      >
+        Edit
+      </button>
+      <template v-else>
+        <button
+          @click="isEditing = false"
+          class="px-6 py-2 bg-gray-100 text-gray-700 rounded"
+        >
+          Cancel
+        </button>
+        <button
+          @click="submitLeaves"
+          class="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+        >
+          Done
+        </button>
+      </template>
     </div>
   </div>
 </template>
