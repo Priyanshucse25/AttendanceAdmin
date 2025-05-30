@@ -2,23 +2,24 @@
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useProfileStore } from "@/stores/profileStore";
 import { storeToRefs } from "pinia";
-// import socket from "@/utils/admin-socket.js"
+import socket from "@/utils/admin-socket.js"
 
 const profileStore = useProfileStore();
 
-const {holidayDetails} = storeToRefs(profileStore)
+const { holidayDetails } = storeToRefs(profileStore);
 
-// onMounted(() => {
-//   socket.on("newUserNotification", (msg) => {
-//     console.log("📩 New message from user:", msg);
-//     // You can trigger a toast, modal, or badge counter here
-//   });
-// });
+const showAddHoliday = ref(false);
 
-// onBeforeUnmount(() => {
-//   socket.off("newUserNotification");
-// });
+onMounted(() => {
+  socket.on("notification", (msg) => {
+    console.log("📩 New message from user:", msg);
+    // You can trigger a toast, modal, or badge counter here
+  });
+});
 
+onBeforeUnmount(() => {
+  socket.off("notification");
+});
 
 // Form inputs
 const newHolidayName = ref("");
@@ -37,22 +38,30 @@ const submitHoliday = async () => {
   }
 };
 
-const toggleHoliday = async(data ,id) => {
-  console.log(data)
+const toggleHoliday = async (data, id) => {
+  console.log(data);
   try {
-    await profileStore.editHolidayDetails(data, id)
+    await profileStore.editHolidayDetails(data, id);
   } catch (error) {
-    console.error(error)
+    console.error(error);
   }
-}
+};
 </script>
 
 <template>
   <section class="space-y-6 overflow-y-hidden">
-    <h2 class="text-lg font-semibold text-gray-800">List of Holidays</h2>
+    <div class="flex items-center justify-between ">
+      <h2 class="text-lg font-semibold text-gray-800">List of Holidays</h2>
+      <button
+        @click="showAddHoliday = !showAddHoliday"
+        class="bg-blue-600 text-white px-4 py-2 rounded"
+      >
+        {{ showAddHoliday ? "Close" : "Add Holiday" }}
+      </button>
+    </div>
 
     <!-- Add Holiday Form -->
-    <div class="space-y-4 p-4 border border-gray-300 rounded-lg">
+    <div v-if="showAddHoliday" class="space-y-4 p-4 border border-gray-300 rounded-lg">
       <h3 class="font-semibold text-gray-700">Add New Holiday</h3>
       <input
         v-model="newHolidayName"
@@ -74,7 +83,7 @@ const toggleHoliday = async(data ,id) => {
     </div>
 
     <!-- Holiday List -->
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div
         v-for="(holiday, index) in holidayDetails"
         :key="holiday.name + holiday.date"

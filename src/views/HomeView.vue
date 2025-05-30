@@ -124,6 +124,7 @@ const prevPage = () => {
         <option value="">All Status</option>
         <option value="Present">Present</option>
         <option value="Absent">Absent</option>
+        <option value="Absent">Late</option>
       </select>
     </div>
 
@@ -203,6 +204,18 @@ const prevPage = () => {
                   ]"
                 >
                   Half Day
+                </button>
+
+                <button
+                  @click="updateAttendence(employee._id, 'late')"
+                  class="px-3 py-1 rounded font-medium text-sm"
+                  :class="[
+                    employee.status === 'late'
+                      ? 'bg-blue-500 bg-opacity-30 text-blue-600'
+                      : 'bg-gray-200 text-gray-700 hover:bg-blue-100',
+                  ]"
+                >
+                  Late
                 </button>
               </td>
             </tr>

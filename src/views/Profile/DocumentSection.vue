@@ -76,10 +76,10 @@ function resetModal() {
       <h2 class="font-semibold text-gray-800 text-lg">Documents</h2>
       <button
         @click="showUploadModal = true"
-        class="flex items-center gap-1 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 text-sm rounded"
+        class="flex items-center gap-1 bg-blue-500 hover:bg-purple-600 text-white px-8 py-2 text-sm rounded-md"
       >
         Add New
-        <span class="text-lg">+</span>
+        <span class="text-[20px]">+</span>
       </button>
     </div>
 

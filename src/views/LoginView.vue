@@ -22,9 +22,13 @@ const login = async () => {
   try {
     requested.value = true;
     error.value = "";
-    await auth.loginAdmin({ email: email.value, password: password.value });
-    router.push("/");
-    toast.success("Logged in successfully");
+    const response =  await auth.loginAdmin({ email: email.value, password: password.value });
+    if (response.status === 200) {
+       toast.success("Logged in successfully!");
+     }
+    setTimeout(() => {
+      router.push("/");
+    }, 1000); 
   } catch (err) {
     error.value = err.response?.data?.message || "Login failed.";
   }finally{

@@ -262,7 +262,7 @@ function toggleStatus(emp) {
               <th class="text-center px-4 py-2">Present</th>
               <th class="text-center px-4 py-2">Paid Leaves</th>
               <th class="text-center px-4 py-2">Leaves</th>
-              <th class="text-center px-4 py-2">Half Day</th>
+              <!-- <th class="text-center px-4 py-2">Half Day</th> -->
               <!-- <th class="text-center px-4 py-2">Sick Leaves</th> -->
               <th class="text-left px-4 py-2">Add On</th>
               <th class="text-left px-4 py-2">Actual Salary</th>
@@ -307,12 +307,12 @@ function toggleStatus(emp) {
                 {{ emp.leave?.filter((l) => l.type === "paid").length || 0 }}
               </td>
               <td class="text-center px-4 py-3">{{ emp.leave.length }}</td>
-              <td class="text-center px-4 py-3">
+              <!-- <td class="text-center px-4 py-3">
                 {{ emp.halfDay }}
                 <span class="text-xs text-gray-400"
                   >({{ (emp.halfDay / 2).toFixed(1) }}d)</span
                 >
-              </td>
+              </td> -->
               <!-- <td class="text-center px-4 py-3">{{ emp.sickLeaves }}</td> -->
               <td class="px-4 py-3">
                 <span
