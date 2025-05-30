@@ -7,7 +7,7 @@ import LottieAnimation from "@/components/LottieAnimation.vue";
 
 // store
 const salaryStore = usesalaryStore();
-const { salaryData, loading, page, limit, totalPages } = storeToRefs(salaryStore);
+const { salaryData, salaryRecords, loading, page, limit, totalPages } = storeToRefs(salaryStore);
 
 const searchName = ref("");
 const selectedDepartment = ref("");
@@ -20,8 +20,6 @@ const addOnTitle = ref("");
 const addOnAmount = ref("");
 const addOnType = ref("Bonus");
 const showAddOnForm = ref(false);
-
-
 
 // Leave and salary logic
 const calculateTotalLeaves = (emp) => {
@@ -41,7 +39,15 @@ const calculateDeduction = (emp) => {
 
 const calculatePayable = (emp) => {
   const deduction = calculateDeduction(emp);
-  return Math.max(0, Number(emp.actualSalary) - deduction);
+  const baseSalary = Number(emp.actualSalary) || 0;
+
+  // Sum all addon amounts if emp.addOns exists
+  const totalAddOns = emp.addOns
+    ? emp.addOns.reduce((sum, addon) => sum + Number(addon.amount || 0), 0)
+    : 0;
+
+  const totalSalaryWithAddOns = baseSalary + totalAddOns;
+  return Math.max(0, totalSalaryWithAddOns - deduction);
 };
 
 const getCurrentMonthDays = () => {
@@ -51,6 +57,12 @@ const getCurrentMonthDays = () => {
 
 const getPresentDays = (emp) => {
   return getCurrentMonthDays() - (emp.leave?.length || 0);
+};
+
+const calculateTotalSalary = (emp) => {
+  const baseSalary = Number(emp.actualSalary) || 0;
+  const addOnAmount = Number(emp.addOnAmount) || 0;
+  return baseSalary + addOnAmount;
 };
 
 // Modal functions
@@ -94,10 +106,12 @@ const addSalaryAddOn = async () => {
   }
 
   try {
-    // Prepare the data to send to API with complete payload
     const updatedSalary = Number(selectedEmployee.value.actualSalary) + amount;
-    const updatedPayable = calculatePayable({...selectedEmployee.value, actualSalary: updatedSalary});
-    
+    const updatedPayable = calculatePayable({
+      ...selectedEmployee.value,
+      actualSalary: updatedSalary,
+    });
+
     const updateData = {
       username: selectedEmployee.value.name,
       userId: selectedEmployee.value.empId,
@@ -107,29 +121,44 @@ const addSalaryAddOn = async () => {
       paidLeaves: selectedEmployee.value.paidLeaves,
       leaves: selectedEmployee.value.leaves,
       halfDay: selectedEmployee.value.halfDay,
-      addOn: addOnTitle.value,
-      
-      actualSalary: updatedSalary,
+      sickLeaves: selectedEmployee.value.sickLeaves,
+      addOnType: addOnTitle.value,
+      actualSalary: selectedEmployee.value.actualSalary,
+      addOnAmount: addOnAmount.value,
       payable: updatedPayable,
       status: selectedEmployee.value.status,
-      AddOnAmount: selectedEmployee.value.addOnAmount ? 
-        Number(selectedEmployee.value.addOnAmount) + amount : amount
+      addOn: addOnTitle.value,
     };
 
-    // Call the API
     const response = await salaryStore.updateEmployeeSalary(updateData);
-    
-    if (response && response.success) {
-      // Update local selected employee data
-      selectedEmployee.value.actualSalary = updatedSalary;
+
+    if (response) {
+      // ✅ Update modal data
+      selectedEmployee.value.addOnAmount = addOnAmount.value;
       selectedEmployee.value.addOn = addOnTitle.value;
+      selectedEmployee.value.payable = updatedPayable;
+
+      // ✅ Update local table list (salaryData)
+      const index = salaryData.value.findIndex(
+        (emp) => emp.empId === selectedEmployee.value.empId
+      );
+      if (index !== -1) {
+        salaryData.value[index] = {
+          ...salaryData.value[index],
+          addOnAmount: addOnAmount.value,
+          addOn: addOnTitle.value,
+          payable: updatedPayable  + Number(salaryData.value[index].addOnAmount || 0),
+        };
+      }
 
       // Reset form
       addOnTitle.value = "";
       addOnAmount.value = "";
       showAddOnForm.value = false;
-      
-      alert(`Successfully added ₹${amount} to ${selectedEmployee.value.name}'s salary`);
+
+      alert(
+        `Successfully added ₹${amount} add-on to ${selectedEmployee.value.name}'s salary`
+      );
     } else {
       alert("Failed to update salary. Please try again.");
     }
@@ -140,43 +169,40 @@ const addSalaryAddOn = async () => {
 };
 
 const generateInvoice = (employee) => {
-  // Placeholder for invoice generation
   alert(`Generating invoice for ${employee.name}`);
-  // You can implement actual invoice generation logic here
 };
 
-const fetchSalaries = () => {
-  salaryStore.getUserSalary({
+const fetchSalaries = async () => {
+  await salaryStore.getUserSalary({
     search: searchName.value,
     department: selectedDepartment.value,
     status: selectedStatus.value,
-    page: page.value,
-    limit: limit.value,
   });
 };
-
-const debouncedFetchSalaries = debounce(fetchSalaries, 500);
 
 watch(
   [searchName, selectedDepartment, selectedStatus],
   () => {
-    page.value = 0;
-    debouncedFetchSalaries();
+    page.value = 1;
+    fetchSalaries();
   }
 );
 
-watch(page, () => {
-  fetchSalaries(); // no debounce here
-});
-
 const nextPage = () => {
-  page.value++;
+  if (page.value < totalPages.value) {
+    page.value++;
+    fetchSalaries();
+  }
 };
 
 const prevPage = () => {
-  if (page.value > 0) page.value--;
+  if (page.value > 1) {
+    page.value--;
+    fetchSalaries();
+  }
 };
 </script>
+
 
 <template>
   <main class="bg-white w-full rounded-md p-4">
@@ -214,7 +240,6 @@ const prevPage = () => {
         <option value="unpaid">Unpaid</option>
       </select>
     </div>
-
     <!-- TABLE -->
     <template v-if="salaryData && salaryData.length > 0">
       <div class="overflow-x-auto no-scrollbar mt-4">
@@ -234,7 +259,7 @@ const prevPage = () => {
               <th class="text-left px-4 py-2">Add On</th>
               <th class="text-left px-4 py-2">Actual Salary</th>
               <th class="text-left px-4 py-2">Payable</th>
-              <th class="text-left px-4 py-2">Status</th>
+              <th class="text-left px-4 py-2">Status</th> 
               <th class="text-right px-4 py-2">Action</th>
             </tr>
           </thead>
@@ -248,7 +273,6 @@ const prevPage = () => {
                 calculateTotalLeaves(emp) > 14 ? 'bg-red-50' : '',
               ]"
             >
-            <!-- {{ emp.leave }} -->
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
                   <img
@@ -284,15 +308,12 @@ const prevPage = () => {
               <!-- <td class="text-center px-4 py-3">{{ emp.sickLeaves }}</td> -->
               <td class="px-4 py-3">
                 <span
-                  v-if="emp.addOn && emp.addOn !== '------'"
-                  :class="[
-                    'px-2 py-1 rounded text-xs font-medium',
-                    emp.addOn.includes('Birthday')
-                      ? 'bg-pink-100 text-pink-600'
-                      : 'bg-purple-100 text-purple-600',
-                  ]"
+                  v-if="emp.addOns && emp.addOns !== '------'"
+                  v-for="(addon, index) in emp.addOns"
+                  
                 >
-                  {{ emp.addOn }}
+                  {{ addon.amount }} {{ addon.type }}
+                  <span v-if="index < emp.addOns.length - 1">, </span>
                 </span>
                 <span v-else class="text-gray-400 text-xs">------</span>
               </td>
@@ -413,73 +434,78 @@ const prevPage = () => {
             <p class="text-sm text-gray-600">{{ selectedEmployee.empId }}</p>
           </div>
           
-
-          <!-- Total Salary Display -->
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <p class="text-sm text-gray-600">Total Salary</p>
-              <p class="text-lg font-semibold">₹{{ selectedEmployee.actualSalary }}</p>
+          <!-- Salary Breakdown -->
+          <div class="mb-4 space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Base Salary:</span>
+              <span class="font-medium">₹{{ selectedEmployee.actualSalary }}</span>
             </div>
-            <button
-              @click="toggleAddOnForm"
-              class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              :disabled="updateLoading"
-            >
-              {{ showAddOnForm ? 'Cancel' : 'Add' }}
-            </button>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Add-On Amount:</span>
+              <span class="font-medium text-green-600">
+                +₹{{ selectedEmployee.addOnAmount || 0 }}
+              </span>
+            </div>
+            <hr>
+            <div class="flex justify-between">
+              <span class="font-medium">Total Salary:</span>
+              <span class="font-semibold text-lg">₹{{ calculateTotalSalary(selectedEmployee) }}</span>
+            </div>
           </div>
+          
+          <button
+            @click="toggleAddOnForm"
+            class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-4"
+            :disabled="loading"
+          >
+            {{ showAddOnForm ? 'Cancel Add-On' : 'Add Bonus/Incentive' }}
+          </button>
 
           <!-- Add On Form -->
           <div v-if="showAddOnForm" class="space-y-4">
-            <div class="flex gap-2">
+            <div class="space-y-2">
               <input
                 v-model="addOnTitle"
                 type="text"
-                placeholder="Title (e.g., Performance Bonus)"
-                class="flex-1 px-3 py-2 border border-gray-300 rounded outline-none focus:border-blue-500"
-                :disabled="updateLoading"
+                placeholder="Title (e.g., Performance Bonus, Festival Bonus)"
+                class="w-full px-3 py-2 border border-gray-300 rounded outline-none focus:border-blue-500"
+                :disabled="loading"
               />
               <input
                 v-model="addOnAmount"
                 type="number"
-                placeholder="Amount"
-                class="w-24 px-3 py-2 border border-gray-300 rounded outline-none focus:border-blue-500"
-                :disabled="updateLoading"
+                placeholder="Add-On Amount"
+                class="w-full px-3 py-2 border border-gray-300 rounded outline-none focus:border-blue-500"
+                :disabled="loading"
               />
             </div>
-            <!-- <select
-              v-model="addOnType"
-              class="w-full px-3 py-2 border border-gray-300 rounded outline-none focus:border-blue-500"
-              :disabled="updateLoading"
-            >
-              <option value="Bonus">Bonus</option>
-              <option value="Overtime">Overtime</option>
-              <option value="Commission">Commission</option>
-              <option value="Allowance">Allowance</option>
-              <option value="Incentive">Incentive</option>
-              <option value="Other">Other</option>
-            </select> -->
+            
             <button
               @click="addSalaryAddOn"
-              :disabled="updateLoading"
+              :disabled="loading"
               class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              <span v-if="updateLoading" class="mr-2">
+              <span v-if="loading" class="mr-2">
                 <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               </span>
-              {{ updateLoading ? 'Updating...' : 'Add This Content' }}
+              {{ loading ? 'Adding...' : 'Add This Add-On' }}
             </button>
           </div>
 
           <!-- Current Add-ons -->
           <div v-if="selectedEmployee.addOn && selectedEmployee.addOn !== '------'" class="mt-4">
             <p class="text-sm text-gray-600 mb-2">Current Add-on:</p>
-            <span class="bg-purple-100 text-purple-600 px-2 py-1 rounded text-sm">
-              {{ selectedEmployee.addOn }}
-            </span>
+            <div class="flex justify-between items-center p-2 bg-purple-50 rounded">
+              <span class="bg-purple-100 text-purple-600 px-2 py-1 rounded text-sm">
+                {{ selectedEmployee.addOn }}
+              </span>
+              <span class="text-green-600 font-medium">
+                +₹{{ selectedEmployee.addOnAmount || 0 }}
+              </span>
+            </div>
           </div>
         </div>
       </div>

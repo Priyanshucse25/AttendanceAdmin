@@ -5,43 +5,89 @@ import { ref } from "vue";
 export const usesalaryStore = defineStore("salary", () => {
   const endpoint = "admin";
   const salaryData = ref([]);
+  const salaryRecords = ref([]);
   const loading = ref(false);
   const page = ref(1);
   const limit = ref(10);
-  const totalPages = ref("");
+  const totalPages = ref(0);
 
   const getUserSalary = async (filters = {}) => {
-    try {
-      loading.value = true;
+  try {
+    loading.value = true;
 
-      const queryParams = {
-        page: page.value,
-        limit: limit.value,
-        ...filters, // Spread searchName, department, status
+    const queryParams = {
+      page: page.value,
+      limit: limit.value,
+      ...filters,
+    };
+
+    const response = await makeRequest(
+      "admin",
+      "GET",
+      {},
+      {},
+      queryParams,
+      0,
+      null,
+      "/salarydetails"
+    );
+
+    const userData = response?.userData || [];
+    const salaryRecordsArr = response?.salaryrecord || [];
+
+    // Group addOns by userId
+    const salaryMap = {};
+
+    salaryRecordsArr.forEach((record) => {
+      const uid = record.userId;
+      if (!salaryMap[uid]) {
+        salaryMap[uid] = [];
+      }
+
+      salaryMap[uid].push({
+        amount: record.addOnAmount || 0,
+        type: record.addOnType || '',
+      });
+    });
+
+    // Enrich userData with all matching addOns
+    const enrichedData = userData.map((emp) => {
+      const addOns = salaryMap[emp.empId] || [];
+      return {
+        ...emp,
+        addOns, // array of { amount, type }
       };
+    });
 
-      const response = await makeRequest(
-        "admin",
-        "GET",
-        {},
-        {},
-        queryParams,
-        0,
-        null,
-        "/salarydetails"
-      );
-      salaryData.value = response?.userData;
-      totalPages.value = response?.totalPages;
-    } catch (error) {
-      console.error("Error in salary", error);
-    } finally {
-      loading.value = false;
-    }
-  };
+    // Collect all addOns for global usage or display
+    const allAddOns = salaryRecordsArr.map((rec) => ({
+      amount: rec.addOnAmount || 0,
+      type: rec.addOnType || '',
+    }));
+
+    // Optional: get unique addOn types
+    const uniqueAddOnTypes = [...new Set(allAddOns.map((a) => a.type))];
+
+    console.log("All AddOns:", allAddOns);
+    console.log("Unique AddOn Types:", uniqueAddOnTypes);
+
+    salaryData.value = enrichedData;
+    salaryRecords.value = salaryRecordsArr;
+    totalPages.value = response?.totalPages || 0;
+
+  } catch (error) {
+    console.error("Error in salary", error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+
 
   const updateEmployeeSalary = async (employeeData) => {
     try {
       loading.value = true;
+
       const response = await makeRequest(
         endpoint,
         "POST",
@@ -56,13 +102,15 @@ export const usesalaryStore = defineStore("salary", () => {
       // Update the local data if the request is successful
       if (response && response.success) {
         const empIndex = salaryData.value.findIndex(
-          (emp) => emp.id === employeeData.userId
+          (emp) => emp.empId === employeeData.userId // Changed from emp.id to emp.empId
         );
+
         if (empIndex !== -1) {
           salaryData.value[empIndex] = {
             ...salaryData.value[empIndex],
             actualSalary: employeeData.actualSalary,
-            addOn: employeeData.addOn,
+            addOn: employeeData.addOnType, // Use addOnType instead of addOn
+            payable: employeeData.payable,
           };
         }
       }
@@ -76,10 +124,12 @@ export const usesalaryStore = defineStore("salary", () => {
     }
   };
 
+  // Initialize data on store creation
   getUserSalary();
 
   return {
     salaryData,
+    salaryRecords,
     getUserSalary,
     updateEmployeeSalary,
     loading,
