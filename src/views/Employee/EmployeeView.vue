@@ -10,6 +10,7 @@ import LottieAnimation from "@/components/LottieAnimation.vue";
 const employeeStore = useEmployeeStore();
 const { allEmployeeData, loading, page, limit, totalPages } = storeToRefs(employeeStore);
 
+
 const searchQuery = ref("");
 const filterDept = ref("");
 const showModal = ref(false);

@@ -2,9 +2,10 @@
 import { ref } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
-// import { toast } from 'vue3-toastify'
+import { useCustomToast } from "@/utils/toast-function";
 
 const authStore = useAuthStore()
+const toast = useCustomToast();
 
 const route = useRoute();
 
@@ -40,7 +41,7 @@ const toggleSidebar = () => {
 
 const handleLogout = async () => {
   await authStore.logout()
-  // toast.success("Logged out successfully")
+  toast.success("Logged out successfully")
 };
 </script>
 

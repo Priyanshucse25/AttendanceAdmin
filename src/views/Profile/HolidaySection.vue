@@ -1,53 +1,99 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import { useProfileStore } from "@/stores/profileStore";
+import { storeToRefs } from "pinia";
+// import socket from "@/utils/admin-socket.js"
 
-const allHolidays = [
-  // Hindu holidays
-  { name: 'Diwali', date: '2025-10-20', religion: 'Hindu', enabled: true },
-  { name: 'Holi', date: '2025-03-13', religion: 'Hindu', enabled: false },
-  { name: 'Navratri', date: '2025-10-01', religion: 'Hindu', enabled: true },
-  { name: 'Raksha Bandhan', date: '2025-08-18', religion: 'Hindu', enabled: true },
-  { name: 'Janmashtami', date: '2025-08-06', religion: 'Hindu', enabled: false },
+const profileStore = useProfileStore();
 
-  // Christian holidays
-  { name: 'Christmas', date: '2025-12-25', religion: 'Christian', enabled: true },
-  { name: 'Good Friday', date: '2025-04-18', religion: 'Christian', enabled: true },
-  { name: 'Easter', date: '2025-04-20', religion: 'Christian', enabled: false },
-  { name: 'Palm Sunday', date: '2025-04-13', religion: 'Christian', enabled: false },
-  { name: 'All Saints Day', date: '2025-11-01', religion: 'Christian', enabled: false }
-];
+const {holidayDetails} = storeToRefs(profileStore)
 
-const holidays = ref(allHolidays);
+// onMounted(() => {
+//   socket.on("newUserNotification", (msg) => {
+//     console.log("📩 New message from user:", msg);
+//     // You can trigger a toast, modal, or badge counter here
+//   });
+// });
 
-function toggleHoliday(index) {
-  holidays.value[index].enabled = !holidays.value[index].enabled;
+// onBeforeUnmount(() => {
+//   socket.off("newUserNotification");
+// });
+
+
+// Form inputs
+const newHolidayName = ref("");
+const newHolidayDate = ref("");
+
+const submitHoliday = async () => {
+  try {
+    const data = {
+      holidayName: newHolidayName.value,
+      date: newHolidayDate.value,
+      isActive: true,
+    };
+    await profileStore.postHolidayDetails(data);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const toggleHoliday = async(data ,id) => {
+  console.log(data)
+  try {
+    await profileStore.editHolidayDetails(data, id)
+  } catch (error) {
+    console.error(error)
+  }
 }
 </script>
 
 <template>
-  <section class="space-y-6 overflow-y-hidden h-[calc(60vh-80px)] max-h-screen">
+  <section class="space-y-6 overflow-y-hidden">
     <h2 class="text-lg font-semibold text-gray-800">List of Holidays</h2>
 
-    <div
-      v-for="(holiday, index) in holidays"
-      :key="holiday.name"
-      class="flex items-center justify-between p-4 border rounded shadow-sm bg-white"
-    >
-      <div>
-        <h3 class="text-sm font-medium text-gray-700">{{ holiday.name }} ({{ holiday.religion }})</h3>
-        <p class="text-xs text-gray-500">{{ holiday.date }}</p>
+    <!-- Add Holiday Form -->
+    <div class="space-y-4 p-4 border border-gray-300 rounded-lg">
+      <h3 class="font-semibold text-gray-700">Add New Holiday</h3>
+      <input
+        v-model="newHolidayName"
+        type="text"
+        placeholder="Holiday Name"
+        class="w-full border p-2 rounded"
+      />
+      <input
+        v-model="newHolidayDate"
+        type="date"
+        class="w-full border p-2 rounded"
+      />
+      <button
+        @click="submitHoliday"
+        class="bg-green-600 text-white px-4 py-2 rounded w-full"
+      >
+        Add Holiday
+      </button>
+    </div>
+
+    <!-- Holiday List -->
+    <div class="grid grid-cols-2 gap-4">
+      <div
+        v-for="(holiday, index) in holidayDetails"
+        :key="holiday.name + holiday.date"
+        class="flex items-center justify-between py-2 border border-black border-opacity-30 px-4 rounded-xl"
+      >
+        <div>
+          <h3 class="text-sm font-medium text-gray-700">
+            {{ holiday.holidayName }}
+          </h3>
+          <p class="text-xs text-gray-500">{{ holiday.date }}</p>
+        </div>
+        <button
+          @click="toggleHoliday(!holiday.isActive, holiday._id)"
+          :class="holiday.isActive ? 'bg-gray-400' : 'bg-purple-500'"
+          class="text-white px-4 py-1 rounded"
+        >
+          {{ holiday.isActive ? "Disable" : "Enable" }}
+        </button>
       </div>
-      <label class="inline-flex items-center cursor-pointer">
-        <input
-          type="checkbox"
-          class="sr-only peer"
-          :checked="holiday.enabled"
-          @change="toggleHoliday(index)"
-        />
-        <div
-          class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-purple-600 transition-colors"
-        ></div>
-      </label>
     </div>
   </section>
 </template>

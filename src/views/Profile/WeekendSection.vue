@@ -23,7 +23,8 @@ const saturdayRules = [
 const isEditing = ref(false);
 
 // Watch for loaded weekend details
-watch(weekendDetails, (details) => {
+watch(weekendDetails, (detailsArray) => {
+  const details = detailsArray?.[0]; // Access first item
   if (details?.weeklyoff) {
     selectedDays.value = [...details.weeklyoff];
   }
@@ -46,12 +47,13 @@ const submitForm = async () => {
 const cancelEdit = () => {
   isEditing.value = false;
   // Restore values from store
-  if (weekendDetails.value?.weeklyoff) {
-    selectedDays.value = [...weekendDetails.value.weeklyoff];
-  }
-  if (weekendDetails.value?.weekcondition) {
-    selectedSaturdayRule.value = weekendDetails.value.weekcondition;
-  }
+  const original = weekendDetails.value?.[0];
+if (original?.weeklyoff) {
+  selectedDays.value = [...original.weeklyoff];
+}
+if (original?.weekcondition) {
+  selectedSaturdayRule.value = original.weekcondition;
+}
 };
 </script>
 

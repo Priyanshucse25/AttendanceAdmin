@@ -92,13 +92,16 @@ const signup = async () => {
 <template>
   <div class="min-h-screen flex items-center justify-center bg-white">
     <!-- Left Side Image -->
-    <div class="w-[50%] p-2">
+    <div class="hidden xl:block xl:w-[50%] p-2">
       <img src="/images/auth-image.png" alt="auth-image" />
     </div>
 
     <!-- Right Side Form -->
-    <div class="w-[50%] h-screen">
+    <div class="w-full md:w-[80%] xl:w-[50%] h-screen">
       <div class="flex flex-col mx-auto items-start justify-center h-full w-[70%] space-y-4">
+        <div class="xl:hidden mx-auto">
+          <img src="/svg/logo.svg" alt="Logo" class="w-[200px] " />
+        </div>
         <h2 class="text-[30px] font-bold text-left">Create an account</h2>
 
         <input v-model="name" type="text" placeholder="Name" class="mb-3 w-full p-2 border rounded-md" />

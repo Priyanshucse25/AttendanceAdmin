@@ -1,6 +1,7 @@
 <script setup>
 import { ref, reactive } from "vue";
 import { useProfileStore } from "@/stores/profileStore";
+import { makeRequest } from "@/request/request";
 import DetailSection from "./DetailSection.vue";
 import PunchSection from "./PunchSection.vue";
 import LeaveSection from "./LeaveSection.vue";
@@ -15,6 +16,7 @@ const { companyDetails } = storeToRefs(profileStore);
 const activeTab = ref("about");
 const editMode = ref(false);
 const selectedImage = ref(null);
+const previewImage = ref(null); 
 
 // Tab config
 const tabs = [
@@ -47,32 +49,25 @@ const toggleEdit = () => {
 const onImageChange = (event) => {
   const file = event.target.files[0];
   if (file) {
-    selectedImage.value = URL.createObjectURL(file); // for preview
-    selectedImage.value = file; // for sending in binary
+    selectedImage.value = file;                    // keep the file for upload
+    previewImage.value = URL.createObjectURL(file); // set preview URL
   }
 };
 
+const submitCompanyDetails = async (id) => {
+  if (!selectedImage.value) return;
 
-const submitCompanyDetails = async () => {
   const formData = new FormData();
-  formData.append("name", form.name);
-  formData.append("organisation", form.organisation);
-  formData.append("industry", form.industry);
-  formData.append("teamSize", form.teamSize);
-  formData.append("years", form.years);
-
-  if (selectedImage.value) {
-    formData.append("image", selectedImage.value); // match backend field name
-  }
+  formData.append("image", selectedImage.value); // Make sure this field name matches backend expectation
 
   try {
-    await profileStore.editCompanyDetails(formData); // must accept FormData
-    companyDetails.value = { ...form }; // update local state
-    editMode.value = false;
+    // await profileStore.editCompanyDetails(formData); // should accept only image
+    await makeRequest("/admin/edit", "PUT", formData, {}, {}, 0, id)
   } catch (err) {
-    console.error("Error submitting company details", err);
+    console.error("Error uploading company image", err);
   }
 };
+
 </script>
 
 <template>
@@ -80,7 +75,7 @@ const submitCompanyDetails = async () => {
     <!-- Header -->
     <div>
       <form
-        @submit.prevent="submitCompanyDetails"
+        
         class="flex items-center gap-4"
       >
         <!-- Profile Image and Edit Icon -->
@@ -88,7 +83,7 @@ const submitCompanyDetails = async () => {
           class="relative w-[80px] h-[80px] rounded-full overflow-hidden group"
         >
           <img
-            :src="selectedImage || '/images/dummy_profile_img.jpg'"
+            :src="companyDetails.image || '/images/dummy_profile_img.jpg'"
             alt="Profile"
             class="w-full h-full object-cover"
           />
@@ -129,7 +124,6 @@ const submitCompanyDetails = async () => {
             </template>
             <template v-else>{{ companyDetails.name }}</template>
           </h2>
-
           <!-- Organisation & Industry -->
           <div class="flex gap-4 text-[14px] w-[50%]">
             <template v-if="editMode">
@@ -175,7 +169,8 @@ const submitCompanyDetails = async () => {
           <!-- Submit Button -->
           <div v-if="editMode" class="mt-2">
             <button
-              type="submit"
+            type="button"
+              @click="submitCompanyDetails(companyDetails._id)"
               class="bg-blue-600 text-white px-4 py-1 text-sm rounded hover:bg-blue-700"
             >
               Save Changes

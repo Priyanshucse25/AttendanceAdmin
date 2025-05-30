@@ -11,6 +11,7 @@ export const useProfileStore = defineStore("profile", () => {
     const holidayDetails = ref([])
     const weekendDetails = ref([])
     const companyDocuments = ref([])
+    const companyLeaves = ref([])
 
     const getCompanyDetails = async() => {
         try {
@@ -61,9 +62,9 @@ export const useProfileStore = defineStore("profile", () => {
     }
 
 
-    const editPunchInDetails = async(form) => {
+    const editPunchInDetails = async(id ,form) => {
         try {
-            const response = await makeRequest(endpoint, "PUT", {form}, {}, {}, 0, null, "/punchdetails")
+            const response = await makeRequest(endpoint, "PUT", {form}, {}, {}, 0, id, "/punchdetails")
             return response
         } catch (error) {
             console.error(error)
@@ -73,7 +74,25 @@ export const useProfileStore = defineStore("profile", () => {
     const getHolidayDetails = async() => {
         try {
             const response = await makeRequest(endpoint, "GET", {}, {}, {}, 0, null, "/holiday")
+            holidayDetails.value = response?.data
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const postHolidayDetails = async(data) => {
+        try {
+            const response = await makeRequest(endpoint, "POST", data, {}, {}, 0, null, "/holiday")
             holidayDetails.value = response
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const editHolidayDetails = async(data, id) => {
+        try {
+            const response = await makeRequest(endpoint, "PUT", {isActive: data}, {}, {}, 0, id, "/holiday")
+            return response
         } catch (error) {
             console.error(error)
         }
@@ -82,7 +101,7 @@ export const useProfileStore = defineStore("profile", () => {
     const getWeekendDetails = async() => {
         try {
             const response = await makeRequest(endpoint, "GET", {}, {}, {}, 0, null, "/weekend")
-            weekendDetails.value = response.data
+            weekendDetails.value = response?.data
         } catch (error) {
             console.error(error)
         }
@@ -128,11 +147,35 @@ export const useProfileStore = defineStore("profile", () => {
     }
 
 
+    const getCompanyLeaves = async() => {
+        try {
+            const response = await makeRequest(endpoint, "GET", {}, {}, {}, 0, null, "/leave")
+            companyLeaves.value = response.data
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const postCompanyLeaves = async (data) => {
+    try {
+        const method = data._id ? "PUT" : "POST";
+        const url = data._id ? `/leave/${data._id}` : "/leave"; // if ID exists, PUT to specific resource
+
+        const response = await makeRequest(endpoint, method, data, {}, {}, 0, null, url);
+        return response;
+    } catch (error) {
+        console.error(error);
+    }
+    };
+
+
+
     getCompanyDetails()
     getPunchInDetails()
     getWeekendDetails()
     getHolidayDetails()
     getCompanyDocument()
+    getCompanyLeaves()
 
     return{
         companyData,
@@ -141,13 +184,17 @@ export const useProfileStore = defineStore("profile", () => {
         addCompanyDetails,
         editCompanyDetails,
         editPunchInDetails,
+        postHolidayDetails,
         postWeekendDetails,
+        postCompanyLeaves,
+        editHolidayDetails,
         companyDocuments,
         postCompanyDocument,
         deleteCompanyDocument,
         addPunchInDetails,
         punchInDetails,
         holidayDetails,
+        companyLeaves,
         weekendDetails
     }
 })

@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth.js";
-// import { toast } from "vue3-toastify";
+import { toast } from "vue3-toastify";
 import LottieAnimation from "@/components/LottieAnimation.vue";
 
 const email = ref("");
@@ -22,10 +22,9 @@ const login = async () => {
   try {
     requested.value = true;
     error.value = "";
-    const response = await auth.loginAdmin({ email: email.value, password: password.value });
-    console.log(response)
-    // toast.success("Logged in successfully");
+    await auth.loginAdmin({ email: email.value, password: password.value });
     router.push("/");
+    toast.success("Logged in successfully");
   } catch (err) {
     error.value = err.response?.data?.message || "Login failed.";
   }finally{
@@ -36,14 +35,18 @@ const login = async () => {
 
 <template>
   <div class="min-h-screen flex items-start justify-center bg-white">
-    <div class="w-[50%] p-2">
+    <div class="hidden xl:block xl:w-[50%] p-2">
       <img src="/images/auth-image.png" alt="" />
     </div>
 
-    <div class="w-[50%] h-screen">
+    <div class="w-full md:w-[80%] xl:w-[50%] h-screen">
+     
       <div
         class="flex flex-col mx-auto items-start justify-center h-full w-[70%] space-y-4"
       >
+       <div class="xl:hidden mx-auto">
+          <img src="/svg/logo.svg" alt="Logo" class="w-[200px] " />
+        </div>
         <div class="space-y-0">
           <h2 class="text-[30px] font-bold text-left">
           Welcome Back
