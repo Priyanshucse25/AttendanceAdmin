@@ -1,7 +1,6 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount, computed } from "vue";
 import { useEmployeeStore } from "@/stores/employeeStore";
-import { useCustomToast } from "@/utils/toast-function";
 import LottieAnimation from "@/components/LottieAnimation.vue";
 
 // Props
@@ -14,7 +13,6 @@ const props = defineProps({
 
 const emit = defineEmits(["close"]);
 const employeeStore = useEmployeeStore();
-const toast = useCustomToast();
 
 const tabs = ["Basic Info", "Contact info", "Upload image", "Job Info"];
 const tabTitles = ["Personal info", "Contact info", "Profile info", "Job Info"];
@@ -228,11 +226,9 @@ const submitEmployeeForm = async () => {
     requested.value = true;
     if (props.employee?.userId) {
       await updateEmployeeData(props.employee.userId);
-      toast.success("Employee Edited successfully")
     } else {
       const uploadData = createFormData();
       await employeeStore.createNewEmployee(uploadData);
-      toast.success("Employee Created successfully")
     }
 
     resetForm();

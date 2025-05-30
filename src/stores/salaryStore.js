@@ -69,9 +69,6 @@ export const usesalaryStore = defineStore("salary", () => {
     // Optional: get unique addOn types
     const uniqueAddOnTypes = [...new Set(allAddOns.map((a) => a.type))];
 
-    // console.log("All AddOns:", allAddOns);
-    // console.log("Unique AddOn Types:", uniqueAddOnTypes);
-
     salaryData.value = enrichedData;
     salaryRecords.value = salaryRecordsArr;
     totalPages.value = response?.totalPages || 0;

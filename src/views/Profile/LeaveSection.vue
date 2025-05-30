@@ -85,7 +85,7 @@ const submitLeaves = async () => {
 
       <!-- Leave Policy Cycle -->
       <div class="flex items-center gap-6">
-        <label class="text-sm font-medium text-gray-700">Leave Policy Cycle</label>
+        <label class="text-sm font-medium text-gray-700">Leave Policy</label>
         <div class="flex items-center gap-4">
           <label class="flex items-center gap-1 text-sm">
             <input
@@ -93,7 +93,7 @@ const submitLeaves = async () => {
               :name="`cycle-${index}`"
               value="yearly"
               v-model="leave.cycle"
-              :disabled="!isEditing"
+              disabled
               class="accent-purple-600"
             />
             Yearly
@@ -104,7 +104,7 @@ const submitLeaves = async () => {
               :name="`cycle-${index}`"
               value="monthly"
               v-model="leave.cycle"
-              :disabled="!isEditing"
+              disabled
               class="accent-purple-600"
             />
             Monthly

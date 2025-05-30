@@ -330,12 +330,12 @@ function toggleStatus(emp) {
               <td class="px-4 py-3">₹{{ emp.actualSalary }}</td>
               <td class="px-4 py-3">
                 ₹{{ calculatePayable(emp) }}
-                <p class="text-xs text-red-500">
+                <!-- <p class="text-xs text-red-500">
                   -₹{{ calculateDeduction(emp) }} deduction
                 </p>
                 <p class="text-xs text-gray-500">
                   {{ calculateTotalLeaves(emp) }} total leaves
-                </p>
+                </p> -->
               </td>
               <td class="px-4 py-3">
                 <button

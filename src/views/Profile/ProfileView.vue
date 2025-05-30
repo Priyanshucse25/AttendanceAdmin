@@ -101,7 +101,7 @@ const onImageChange = async (event) => {
           class="relative w-[80px] h-[80px] rounded-full overflow-hidden group"
         >
           <img
-            :src="companyDetails.image || '/images/dummy_profile_img.jpg'"
+            :src="companyDetails.cmpDetail?.image|| '/images/dummy_profile_img.jpg'"
             alt="Profile"
             class="w-full h-full object-cover"
           />
