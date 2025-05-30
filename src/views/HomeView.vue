@@ -224,10 +224,9 @@ const prevPage = () => {
           ></button>
 
           <p>Page {{ page }} of {{ totalPages }}</p>
-
           <button
             @click="nextPage"
-            :disabled="HomeData.length <= limit"
+            :disabled="HomeData.length < limit"
             :class="{
               'p-2 rounded-full bg-gray-400 hover:bg-gray-600 disabled:opacity-50 pi pi-angle-right': true,
               'cursor-pointer': HomeData.length >= limit,
